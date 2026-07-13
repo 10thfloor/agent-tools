@@ -23,6 +23,11 @@ over, so it works as a pre-commit/CI check.
 - `tok -- <command...>` — count the command's stdout (e.g. `tok -- git diff`).
 - `... | tok` — count stdin when no files/command given.
 - `--max=<n|Nk|Nm>` — mark rows over budget; exit 1 if any input is over.
+- `--pack` — losslessly re-encode exactly one JSON input as TOON on stdout;
+  stderr reports measured before/after tokens and a round-trip check
+  (verified / skipped for the known upstream decoder bug with markdown-link
+  strings / hard-refuse on genuine mismatch). Non-JSON is refused: prose
+  has no lossless token compression.
 - `--enc=o200k|cl100k`, `--json|--toon|--table`, `--help`.
 - Exit: 0 within budget, 1 over, 2 usage.
 

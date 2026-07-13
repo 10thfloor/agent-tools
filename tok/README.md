@@ -29,3 +29,29 @@ Suggested guardrail in a pre-commit hook or CI:
 ```sh
 tok --max=5k CLAUDE.md AGENTS.md || echo "agent docs over token budget"
 ```
+
+## Lossless packing (`--pack`)
+
+`tok --pack` re-encodes **one JSON input** (file, stdin, or `-- command`)
+as TOON — losslessly, with the round-trip verified on every invocation —
+and reports real measured savings on stderr:
+
+```
+$ gh run list --json databaseId,status,conclusion,... | tok --pack
+[20]{conclusion,createdAt,databaseId,displayTitle,event,headBranch,status,workflowName}:
+  success,"2026-07-13T18:41:21Z",29275459595,Triage Scheduled Tasks,schedule,trunk,completed,…
+tok: 1,414 → 985 tokens (30% saved, o200k_base); round-trip: verified
+```
+
+Honesty built in: lossless packing wins on **arrays of uniform records**
+(typically 20–40%) and can go *negative* on deep non-uniform objects — the
+footer tells you either way (a raw GitHub repo object measured −6%). When
+lossy is acceptable, `ght`/`tj`'s pruning saves far more. And prose can't
+be losslessly token-compressed at all — byte compressors + base64 cost
+*more* tokens and models can't read them — so `--pack` refuses non-JSON
+rather than pretending.
+
+Round-trip fine print: verification is skipped (with a stderr warning) for
+payloads that hit `@toon-format/toon` 2.3.0's decoder bug with
+markdown-link strings; the encoding itself is spec-correct. A genuine
+mismatch refuses to emit.

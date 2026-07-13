@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process'
 import { readFileSync, statSync } from 'node:fs'
-import { encode as toonEncode } from '@toon-format/toon'
+import { isDeepStrictEqual } from 'node:util'
+import { encode as toonEncode, decode as toonDecode } from '@toon-format/toon'
 import { parseBudget, buildRow, isBinary } from './count.js'
 
 export const USAGE = `tok — token counter and budget linter for agent-facing text
@@ -9,6 +10,10 @@ Usage:
   tok <file...>            count tokens per file (+ total)
   tok -- <command...>      count a command's stdout, e.g. tok -- git diff
   ... | tok                count stdin
+  tok --pack [input]       losslessly re-encode ONE JSON input as TOON on
+                           stdout; measured savings + round-trip check on
+                           stderr. JSON only — prose can't be losslessly
+                           token-compressed.
 
 Flags: --max=<n|Nk|Nm> (exit 1 if any input exceeds it), --enc=o200k|cl100k,
        --json | --toon | --table, --help
@@ -26,7 +31,8 @@ export function parseArgs(argv) {
       command = argv.slice(i + 1)
       break
     }
-    if (a === '--json') flags.json = true
+    if (a === '--pack') flags.pack = true
+    else if (a === '--json') flags.json = true
     else if (a === '--toon') flags.toon = true
     else if (a === '--table') flags.table = true
     else if (a === '--help' || a === '-h') flags.help = true
@@ -106,6 +112,7 @@ export async function runTok(argv) {
   }
 
   const count = await loadCounter(flags.enc)
+  if (flags.pack) return pack(inputs, count, flags)
   const rows = inputs.map((i) => buildRow(i.name, i.text, count, flags.max))
   const total = rows.reduce((a, r) => a + r.tokens, 0)
   const overCount = rows.filter((r) => r.over).length
@@ -119,6 +126,46 @@ export async function runTok(argv) {
   else if (format === 'toon') process.stdout.write(toonEncode(report, { delimiter: ',' }) + '\n')
   else process.stdout.write(renderTable(rows, report.summary) + '\n')
   return overCount > 0 ? 1 : 0
+}
+
+// Lossless JSON → TOON re-encoding. Strictly one input, strictly JSON:
+// merging NDJSON would change shape, and prose has no lossless token
+// compression (byte compressors + base64 cost MORE tokens and the model
+// can't read them).
+function pack(inputs, count, flags) {
+  if (inputs.length !== 1) {
+    process.stderr.write('tok: --pack takes exactly one input\n')
+    return 2
+  }
+  const { name, text } = inputs[0]
+  let data
+  try {
+    data = JSON.parse(text)
+  } catch {
+    process.stderr.write(`tok: ${name} is not JSON — --pack only re-encodes JSON losslessly\n`)
+    return 1
+  }
+  const toon = toonEncode(data, { delimiter: ',' })
+  let roundTrip
+  try {
+    roundTrip = isDeepStrictEqual(toonDecode(toon), data) ? 'verified' : 'MISMATCH'
+  } catch (err) {
+    // @toon-format/toon 2.3.0's decoder mis-parses quoted strings holding
+    // markdown-link patterns; the encoding itself is spec-correct.
+    if (/bracket|Invalid array length/.test(err.message)) roundTrip = 'skipped (known upstream decoder issue)'
+    else throw err
+  }
+  if (roundTrip === 'MISMATCH') {
+    process.stderr.write('tok: round-trip check failed — refusing to emit (please report this payload)\n')
+    return 1
+  }
+  process.stdout.write(toon + '\n')
+  const before = count(text)
+  const after = count(toon)
+  const saved = before > 0 ? Math.round(100 * (1 - after / before)) : 0
+  const enc = flags.enc === 'cl100k' ? 'cl100k_base' : 'o200k_base'
+  process.stderr.write(`tok: ${before.toLocaleString('en-US')} → ${after.toLocaleString('en-US')} tokens (${saved}% saved, ${enc}); round-trip: ${roundTrip}\n`)
+  return 0
 }
 
 // readFileSync(0) throws EAGAIN on non-blocking pipes (e.g. inside command

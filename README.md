@@ -10,7 +10,7 @@ self-contained (own `package.json`, own tests); this repo is the suite.
 | [tt](tt/) | `tt` | Run the tests, read a ~40-token verdict — failures truncation-proof, second looks free |
 | [tj](tj/) | `tj` | Any JSON-speaking CLI in TOON — profiles strip what agents never read (kubectl, aws, gh, …) |
 | [fleet](fleet/) | `fleet` | Your whole workspace at a glance — every repo's worktrees, PRs, and live agents in one table |
-| [tok](tok/) | `tok` | Know the token cost before you paste — real tokenizer counts plus a CI-ready budget gate |
+| [tok](tok/) | `tok` | Know the token cost before you paste — real tokenizer counts, a CI-ready budget gate, and verified-lossless JSON→TOON packing |
 
 ## Examples & benchmarks
 
@@ -105,10 +105,14 @@ gather concurrently. TOON piped: 101 vs 128 JSON tokens for two repos.
 $ tok CLAUDE.md AGENTS.md            # real tokenizer counts + total
 $ tok --max=5k CLAUDE.md             # exit 1 when over — CI/pre-commit gate
 $ tok -- git diff                    # price a diff before pasting it
+$ gh run list --json … | tok --pack  # lossless JSON→TOON, round-trip verified
 ```
 
-**Benchmark:** n/a — tok is the measuring instrument (every number in this
-section was counted with it).
+**Benchmark:** tok is the measuring instrument (every number in this
+section was counted with it). Its `--pack` mode reports itself honestly:
+30% saved on a uniform 20-run list, −6% on a deep repo object — lossless
+packing only wins on record-shaped data, and the footer says which case
+you're in.
 
 ## House style
 

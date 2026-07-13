@@ -76,6 +76,42 @@ test('directories and binary files are skipped with notes', () => {
   assert.equal(decode(r.stdout).inputs.length, 1)
 })
 
+test('--pack re-encodes a JSON file as TOON, losslessly', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'tok-'))
+  const data = { repo: 'cli/cli', users: [{ id: 1, name: 'a' }, { id: 2, name: 'b' }], topics: ['x', 'y'] }
+  writeFileSync(join(dir, 'd.json'), JSON.stringify(data, null, 2))
+  const r = tok(['--pack', join(dir, 'd.json')])
+  assert.equal(r.status, 0)
+  assert.deepEqual(decode(r.stdout), data)
+  assert.match(r.stderr, /\d+ → \d+ tokens .*% saved, o200k_base\); round-trip: verified/)
+})
+
+test('--pack works on stdin and command mode', () => {
+  const viaStdin = tok(['--pack'], { input: '{"a":1,"b":[2,3]}' })
+  assert.deepEqual(decode(viaStdin.stdout), { a: 1, b: [2, 3] })
+  const viaCmd = tok(['--pack', '--', 'node', '-e', 'console.log(JSON.stringify({ok:true}))'])
+  assert.deepEqual(decode(viaCmd.stdout), { ok: true })
+})
+
+test('--pack refuses non-JSON and multiple inputs', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'tok-'))
+  writeFileSync(join(dir, 'a.md'), 'prose\n')
+  writeFileSync(join(dir, 'b.json'), '{}')
+  const prose = tok(['--pack', join(dir, 'a.md')])
+  assert.equal(prose.status, 1)
+  assert.match(prose.stderr, /not JSON/)
+  const two = tok(['--pack', join(dir, 'a.md'), join(dir, 'b.json')])
+  assert.equal(two.status, 2)
+  assert.match(two.stderr, /exactly one input/)
+})
+
+test('--pack still emits when only the upstream decoder chokes (markdown links)', () => {
+  const r = tok(['--pack'], { input: JSON.stringify({ body: 'see [docs](https://x.dev) for details' }) })
+  assert.equal(r.status, 0)
+  assert.match(r.stdout, /docs/)
+  assert.match(r.stderr, /round-trip: skipped \(known upstream decoder issue\)/)
+})
+
 test('cl100k encoding selectable; bad flags exit 2', () => {
   const dir = mkdtempSync(join(tmpdir(), 'tok-'))
   writeFileSync(join(dir, 'a.md'), 'hello\n')
