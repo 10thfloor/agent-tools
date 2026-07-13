@@ -3,7 +3,7 @@ import { delimiter } from 'node:path'
 import { encode } from '@toon-format/toon'
 import { gatherFleet } from './gather.js'
 
-export const USAGE = `fleet — cross-project overview of repos, worktrees, and agents
+export const USAGE = `fleet: cross-project overview of repos, worktrees, and agents
 
 Usage:
   fleet [roots...]        one row per repo (default root: current directory,
@@ -45,7 +45,7 @@ export async function runFleet(argv, env = process.env) {
     process.stdout.write(USAGE)
     return 0
   }
-  // Split on the platform path delimiter (';' on Windows, ':' elsewhere) —
+  // Split on the platform path delimiter (';' on Windows, ':' elsewhere).
   // Windows paths contain ':' in the drive letter, so ':' would shred them.
   const scanRoots = roots.length ? roots : (env.FLEET_ROOTS ? env.FLEET_ROOTS.split(delimiter).filter(Boolean) : [process.cwd()])
   const repos = await gatherFleet(scanRoots, env)

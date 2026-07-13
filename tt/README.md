@@ -1,9 +1,9 @@
-# tt — run tests without flooding agent context
+# tt: run tests without flooding agent context
 
 `tt` fronts your real test runner and manages what reaches the agent's
 context. By default, only the **verdict** enters: counts, one structured
 row per failure (test name, file:line, assertion), and the child's exit
-code — ~40 tokens instead of a full runner dump. Everything else stays out
+code (~40 tokens instead of a full runner dump). Everything else stays out
 of context but never out of reach: **progressive disclosure**, three tiers
 from one execution, all served from cache without re-running:
 
@@ -28,7 +28,7 @@ failures[1]{n,head,detail}:
   1,✖ rejects empty input (2.1ms),AssertionError … expected [] to have length 1 | at test/parse.test.js:14
 ```
 
-A passing 38-test run costs ~39 tokens (raw output: 653 — 94% less). A
+A passing 38-test run costs ~39 tokens (raw output: 653, 94% less). A
 failing run **always fits in context**: the output is small by
 construction, so harness truncation can never eat the assertion or the
 stack frame you need.
@@ -37,10 +37,10 @@ stack frame you need.
 
 A different view of the results never costs another suite execution:
 
-- `tt --tt-last` — the verdict again, no re-run
-- `tt --tt-fail=2` — failure #2's **complete** block (full stack, uncapped)
-- `tt --tt-full` — the complete raw log of the cached run
-- `tt <command...>` — wrap something other than the detected runner
+- `tt --tt-last`: the verdict again, no re-run
+- `tt --tt-fail=2`: failure #2's **complete** block (full stack, uncapped)
+- `tt --tt-full`: the complete raw log of the cached run
+- `tt <command...>`: wrap something other than the detected runner
 - `--tt-max=<n>` failure-row cap (default 40), `--tt-json`, `--tt-raw`
 
 Exit codes always propagate, so `tt && deploy` gates correctly.
@@ -48,7 +48,7 @@ Exit codes always propagate, so `tt && deploy` gates correctly.
 ## Notes
 
 - In a human terminal (TTY), `tt` streams output through untouched and just
-  caches — a safety behavior so it's harmless interactively, not a feature.
+  caches: a safety behavior so it's harmless interactively, not a feature.
   **tt is for agents' test loops.**
 - When the default `npm test` script runs **vitest or jest**, tt asks the
   runner for its native JSON report and the verdict is exact (runner shows

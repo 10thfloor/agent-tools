@@ -5,7 +5,7 @@ import { isDeepStrictEqual } from 'node:util'
 import { encode as toonEncode, decode as toonDecode } from '@toon-format/toon'
 import { parseBudget, buildRow, isBinary } from './count.js'
 
-export const USAGE = `tok — token counter and budget linter for agent-facing text
+export const USAGE = `tok: token counter and budget linter for agent-facing text
 
 Usage:
   tok <file...>            count tokens per file (+ total)
@@ -13,12 +13,12 @@ Usage:
   ... | tok                count stdin
   tok --pack [input]       losslessly re-encode ONE JSON input as TOON on
                            stdout; measured savings + round-trip check on
-                           stderr. JSON only — prose can't be losslessly
+                           stderr. JSON only; prose can't be losslessly
                            token-compressed.
 
 Flags: --max=<n|Nk|Nm> (exit 1 if any input exceeds it), --enc=o200k|cl100k,
        --json | --toon | --table, --help
-Counts use gpt-tokenizer (o200k_base default) — the same proxy the ght
+Counts use gpt-tokenizer (o200k_base default), the same proxy the ght
 benchmark used; Claude's tokenizer is not public.
 `
 
@@ -146,7 +146,7 @@ function pack(inputs, count, flags) {
   try {
     data = JSON.parse(text)
   } catch {
-    process.stderr.write(`tok: ${name} is not JSON — --pack only re-encodes JSON losslessly\n`)
+    process.stderr.write(`tok: ${name} is not JSON; --pack only re-encodes JSON losslessly\n`)
     return 1
   }
   const toon = toonEncode(data, { delimiter: ',' })
@@ -160,7 +160,7 @@ function pack(inputs, count, flags) {
     else throw err
   }
   if (roundTrip === 'MISMATCH') {
-    process.stderr.write('tok: round-trip check failed — refusing to emit (please report this payload)\n')
+    process.stderr.write('tok: round-trip check failed; refusing to emit (please report this payload)\n')
     return 1
   }
   process.stdout.write(toon + '\n')

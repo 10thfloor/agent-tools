@@ -1,6 +1,6 @@
 export const DELIMITERS = { comma: ',', tab: '\t', pipe: '|' }
 
-export const USAGE = `ght — gh wrapper that re-emits JSON output as TOON for token efficiency
+export const USAGE = `ght: gh wrapper that re-emits JSON output as TOON for token efficiency
 
 Usage: ght <any gh arguments>
 

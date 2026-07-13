@@ -44,7 +44,7 @@ export function slug(branch) {
 }
 
 // Accept a branch name, a full path (separator/case-tolerant), or a path
-// basename — so `rm`/`path`/`note` by native Windows path also resolve.
+// basename, so `rm`/`path`/`note` by native Windows path also resolve.
 export function findWorktree(items, ref) {
   return (
     items.find((w) => w.branch === ref)
@@ -66,7 +66,7 @@ export function pathWithin(parent, child) {
   return c === p || c.startsWith(p + '/')
 }
 
-// The worktree containing a directory (longest path wins — worktrees can be
+// The worktree containing a directory (longest path wins, since worktrees can be
 // nested inside the main one, e.g. .claude/worktrees/*).
 export function worktreeAt(items, dir) {
   return items

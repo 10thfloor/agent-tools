@@ -2,7 +2,7 @@ import { PROFILES } from './profiles.js'
 
 export const DELIMITERS = { comma: ',', tab: '\t', pipe: '|' }
 
-export const USAGE = `tj — run any CLI, re-emit its JSON output as TOON for token efficiency
+export const USAGE = `tj: run any CLI, re-emit its JSON output as TOON for token efficiency
 
 Usage: tj <command> [args...]
 

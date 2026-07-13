@@ -1,4 +1,4 @@
-# bench — token A/B benchmarks on your own workloads
+# bench: token A/B benchmarks on your own workloads
 
 The suite's README numbers are *our* benchmarks on *our* data. `bench` lets
 you prove the savings on **your** repos and commands: define scenarios that
@@ -20,7 +20,7 @@ bench: 65.3% saved across 3 scenario(s) (o200k_base)
 
 ## bench.json
 
-Each scenario pairs two commands as **argv arrays** (no shell strings — the
+Each scenario pairs two commands as **argv arrays** (no shell strings: the
 suite spawns without a shell, and bench keeps that contract):
 
 ```json
@@ -42,7 +42,7 @@ suite spawns without a shell, and bench keeps that contract):
 ```
 
 `ignoreExit: true` measures a scenario even when a command exits non-zero
-(e.g. a red test suite — the output *size* is still the comparison).
+(e.g. a red test suite where the output *size* is still the comparison).
 Otherwise a non-zero exit fails that scenario (reported, excluded from the
 total, overall exit 1).
 
@@ -50,15 +50,15 @@ total, overall exit 1).
 
 | Flag | Effect |
 |---|---|
-| `--min-saved=<pct>` | exit 1 if total savings fall below this — the CI gate |
+| `--min-saved=<pct>` | exit 1 if total savings fall below this (the CI gate) |
 | `--enc=o200k\|cl100k` | tokenizer (default o200k_base) |
 | `--json` / `--toon` / `--table` | output format (table on TTY, TOON piped) |
 | `--md=<path>` | also write a Markdown report |
 
-Counts use `gpt-tokenizer` — the same proxy `ght`/`tok` use; Claude's
+Counts use `gpt-tokenizer`, the same proxy `ght`/`tok` use; Claude's
 tokenizer is not public, so these are structural comparisons, not
 Claude-exact. Benchmarks run live commands twice (baseline then candidate);
-for wall-clock timing rigor use hyperfine — bench is about *tokens*.
+for wall-clock timing rigor use hyperfine (bench is about *tokens*).
 
 ## CI gate example
 
@@ -68,6 +68,6 @@ for wall-clock timing rigor use hyperfine — bench is about *tokens*.
 
 ## Note
 
-`bench` runs exactly the commands in your `bench.json` — a pass-through
+`bench` runs exactly the commands in your `bench.json`. It's a pass-through
 executor, like `tj`/`tok`/`tt`. It runs what you list; see the suite's
 [SECURITY.md](../SECURITY.md).

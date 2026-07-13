@@ -17,7 +17,7 @@ $ ght pr list -R cli/cli --limit 2 --json number,title,author,state
 ```
 
 Same data via plain `gh` costs 1.8× the tokens even at 2 rows (147 vs 82
-o200k tokens) — the gap widens with row count as TOON amortizes the header
+o200k tokens); the gap widens with row count as TOON amortizes the header
 (2.8× at 30 rows).
 
 ## Install
@@ -39,7 +39,7 @@ Requires Node >= 18 and an installed, authenticated `gh`.
 
 ## Usage
 
-Use `ght` exactly like `gh` — every argument is forwarded:
+Use `ght` exactly like `gh` (every argument is forwarded):
 
 ```sh
 ght pr view 123 --json title,body,comments
@@ -56,7 +56,7 @@ Behavior:
 - Interactive prompts still work (stdin/stderr are inherited).
 - After each conversion, a one-line footer goes to **stderr** (stdout stays
   clean TOON): `ght: ~70 tokens (raw gh: ~150, 53% saved)`. Counts are a
-  fast chars/4 estimate (hence the `~`) — loading a real tokenizer would slow
+  fast chars/4 estimate (hence the `~`). Loading a real tokenizer would slow
   every call; [BENCHMARK.md](BENCHMARK.md) has exact measured numbers.
   Disable with `--ght-no-stats` or `GHT_STATS=0`.
 
@@ -81,14 +81,14 @@ default (all opt-out via `--ght-no-prune`):
 
 - drops `node_id`, `gravatar_id`, `_links`, `performed_via_github_app`, and
   every `*_url` field **except** `url` and `html_url`
-- collapses embedded entities — never the root value: user/org objects →
+- collapses embedded entities (never the root value): user/org objects →
   their `login`, repo objects → their `full_name`, label objects → their
   `name`
 - joins arrays of collapsed entities into one comma-separated string
   (`labels: bug, help wanted`) so TOON keeps rows tabular
 - trims commit `verification` to `{verified, reason}` (drops PGP blobs)
 
-TOON encoding itself is lossless — `decode()` returns the original JSON.
+TOON encoding itself is lossless: `decode()` returns the original JSON.
 The benchmark verifies this round-trip on real payloads.
 
 ## Pointing your agent at it
@@ -128,14 +128,14 @@ Headline (o200k_base, live capture 2026-07-11):
 An honest note the benchmark makes explicit: `gh`'s piped output is already
 minified, and TOON *alone* slightly loses to minified JSON on GitHub's
 non-uniform payloads. The savings come from compaction making the data
-tabular-friendly and TOON then encoding it without repeated keys — the two
+tabular-friendly and TOON then encoding it without repeated keys; the two
 steps are measured separately in the report.
 
 ## Known upstream issue
 
 `@toon-format/toon` 2.3.0's **decoder** mis-parses quoted strings containing
 markdown-link patterns (`[x](y)`); `ght` only encodes, and its quoting is
-correct, so output is unaffected — but round-trip verification in the
+correct, so output is unaffected. But round-trip verification in the
 benchmark skips payloads that hit the bug (4/8 scenarios verified).
 
 ## Development

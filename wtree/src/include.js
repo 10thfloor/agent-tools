@@ -2,13 +2,13 @@ import { cpSync, existsSync, globSync, readFileSync } from 'node:fs'
 import { join, resolve, sep } from 'node:path'
 
 // Claude Code-compatible .worktreeinclude: gitignore-style glob patterns of
-// (typically gitignored) files to copy into a fresh worktree — .env files,
+// (typically gitignored) files to copy into a fresh worktree: .env files,
 // local secrets, etc. Subset: comments and globs, no negation (!). Existing
 // files are never overwritten.
 //
 // Security: .worktreeinclude is repo-controlled, so a hostile one could try
 // to escape the repo (`../../.ssh/id_rsa`, absolute paths) and pull secrets
-// into the worktree — a git tree a later `git add -A` might exfiltrate. Both
+// into the worktree (a git tree a later `git add -A` might exfiltrate). Both
 // the source (under mainPath) and the destination (under destPath) are
 // containment-checked; escaping entries are skipped.
 export function copyIncluded(mainPath, destPath) {

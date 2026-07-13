@@ -1,10 +1,10 @@
-# Spec: fleet — cross-project overview of repos, worktrees, and agents
+# Spec: fleet (cross-project overview of repos, worktrees, and agents)
 
 ## Objective
 
 `wtree` answers "what's happening in this repo"; `fleet` lifts that one level:
 scan your project roots and show every repo with its worktrees, dirty
-state, open PRs, work summaries, and which ones have a live agent — one
+state, open PRs, work summaries, and which ones have a live agent. One
 table for the whole fleet. Data comes from `wtree list --json` per repo
 (suite dogfooding; JSON not TOON so parsing never depends on the upstream
 TOON decoder), with a git-only fallback when `wtree` is unavailable.
@@ -18,14 +18,14 @@ TOON decoder), with a git-only fallback when `wtree` is unavailable.
    grouped under their main worktree.
 2. Repos are gathered concurrently (each `wtree list` may hit gh for PRs).
 3. `FLEET_WT` overrides the `wtree` binary (tests point it at the sibling
-   package — a real suite-integration test).
+   package, a real suite-integration test).
 
 ## CLI Contract
 
-- `fleet [roots...]` — one row per repo: branch, main work summary, dirty
+- `fleet [roots...]` (one row per repo): branch, main work summary, dirty
   count, worktrees (active/total), PRs, agents, path. Active repos sort
   first. Table on TTY, TOON piped, `--json` for scripts.
-- `fleet --all` — flattened per-worktree rows across all repos (each wtree row
+- `fleet --all`: flattened per-worktree rows across all repos (each wtree row
   plus a `repo` column).
 - Repos where `wtree` fails fall back to a git-only row (branch + dirty).
 - Exit 0 unless discovery finds no repos (exit 1, friendly note).

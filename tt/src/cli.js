@@ -7,7 +7,7 @@ import { condense, fullFailure } from './condense.js'
 import { defaultCommand, run } from './runner.js'
 import { reporterKind, reporterArgs, parseReport } from './reporters.js'
 
-export const USAGE = `tt — run tests without flooding agent context; details on demand
+export const USAGE = `tt: run tests without flooding agent context; details on demand
 
 Usage:
   tt                      run the project's test command (npm test / pytest /
@@ -60,7 +60,7 @@ function emitVerdict(verdict, rawText, flags) {
   const out = flags.json ? JSON.stringify(verdict) : encode(verdict, { delimiter: ',' })
   process.stdout.write(out + '\n')
   const saved = est(rawText) > 0 ? Math.round(100 * (1 - est(out) / est(rawText))) : 0
-  process.stderr.write(`tt: ~${est(out).toLocaleString('en-US')} tokens (full run: ~${est(rawText).toLocaleString('en-US')}, ${saved}% smaller) — tt --tt-fail=<n> or --tt-full for detail\n`)
+  process.stderr.write(`tt: ~${est(out).toLocaleString('en-US')} tokens (full run: ~${est(rawText).toLocaleString('en-US')}, ${saved}% smaller); tt --tt-fail=<n> or --tt-full for detail\n`)
 }
 
 // Exact verdict from a vitest/jest JSON report.
@@ -127,7 +127,7 @@ export async function runTt(argv, env = process.env) {
   const userCmd = cmd.length ? cmd : null
   const command = userCmd ?? defaultCommand(cwd)
   if (!command) {
-    process.stderr.write('tt: no test command detected — run tt <command...>\n')
+    process.stderr.write('tt: no test command detected; run tt <command...>\n')
     return 2
   }
   // Exact reporters only for the default script (never rewrite user commands).
@@ -145,7 +145,7 @@ export async function runTt(argv, env = process.env) {
   writeFileSync(cache.log, text)
   writeFileSync(cache.meta, JSON.stringify({ command: command.join(' '), exit: code, when: new Date().toISOString(), verdict }))
   if (tty || flags.raw) {
-    process.stderr.write('tt: cached — tt --tt-last re-reads the verdict without re-running\n')
+    process.stderr.write('tt: cached; tt --tt-last re-reads the verdict without re-running\n')
     return code
   }
   emitVerdict(verdict, text, flags)

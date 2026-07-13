@@ -4,7 +4,7 @@ export const stripAnsi = (s) => s.replace(ANSI, '')
 
 // Lines that open a failure block, one per failing test. Deliberately NOT
 // per-file badge lines (`FAIL <file>` in jest, `FAILED <id>` short-summary in
-// pytest) — those duplicate the real per-test blocks and inflate the count.
+// pytest); those duplicate the real per-test blocks and inflate the count.
 const MARKERS = [
   /^\s*✖ /, // node:test spec
   /^\s*[✗×] /, // vitest (✗ older, × v1+)
@@ -63,7 +63,7 @@ export function extractFailures(text, { maxBlocks = 40, maxLines = 8 } = {}) {
   }
 }
 
-// Failure #n's complete block (uncapped detail) — the --tt-fail drill-down.
+// Failure #n's complete block (uncapped detail) for the --tt-fail drill-down.
 export function fullFailure(text, n) {
   const block = collectBlocks(text, 400)[n - 1]
   return block ? [block.head, ...block.lines].join('\n') : null
@@ -75,14 +75,14 @@ const num = (s, re) => Number(s.match(re)?.[1] ?? 0)
 // Each tolerates an all-failing run (a missing pass or fail count is 0).
 export function extractSummary(text) {
   const t = stripAnsi(text)
-  // node:test — spec reporter (`ℹ pass N`, TTY default) and TAP reporter
+  // node:test, both the spec reporter (`ℹ pass N`, TTY default) and TAP reporter
   // (`# pass N`, the piped default) share these counts.
   const nodeFail = t.match(/^[ℹ#] fail (\d+)$/m)
   const nodePass = t.match(/^[ℹ#] pass (\d+)$/m)
   if (nodeFail || nodePass) {
     return { runner: 'node:test', failed: Number(nodeFail?.[1] ?? 0), passed: Number(nodePass?.[1] ?? 0) }
   }
-  // vitest / jest: "Tests  N failed | M passed (T)" — either count may be
+  // vitest / jest: "Tests  N failed | M passed (T)"; either count may be
   // absent on an all-passing or all-failing run.
   const vitLine = t.match(/^\s*Tests:?\s+(.+)$/m)
   if (vitLine && /\d+ (?:failed|passed)/.test(vitLine[1])) {
@@ -91,7 +91,7 @@ export function extractSummary(text) {
   // cargo: "test result: FAILED. N passed; M failed; ..."
   const cargo = t.match(/test result: \w+\. (\d+) passed; (\d+) failed/)
   if (cargo) return { runner: 'cargo', failed: Number(cargo[2]), passed: Number(cargo[1]) }
-  // pytest: "== N failed, M passed in X.Xs ==" — either count optional.
+  // pytest: "== N failed, M passed in X.Xs =="; either count optional.
   const pyLine = t.split('\n').find((l) => / in [\d.]+s/.test(l) && /\d+ (?:passed|failed)/.test(l))
   if (pyLine) return { runner: 'pytest', failed: num(pyLine, /(\d+) failed/), passed: num(pyLine, /(\d+) passed/) }
   return null

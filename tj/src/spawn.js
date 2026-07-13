@@ -4,12 +4,12 @@ import { delimiter, extname, join } from 'node:path'
 // Normalize a (command, args, options) triple for cross-platform spawning
 // with spawn / spawnSync / execFile. Returns [command, args, options].
 //
-// - A .js/.mjs/.cjs target runs under the current Node binary — no reliance
+// - A .js/.mjs/.cjs target runs under the current Node binary, with no reliance
 //   on a shebang or the executable bit (neither works on Windows).
 // - On Windows, .cmd/.bat shims (npm, the wtree link, most JS CLIs) cannot be
 //   spawned without a shell since Node's CVE-2024-27980 fix, so those route
 //   through cmd.exe with args quoted for it. Real .exe programs (git, gh,
-//   cargo, go, node) still spawn directly with a literal arg array — no shell.
+//   cargo, go, node) still spawn directly with a literal arg array (no shell).
 export function prepSpawn(cmd, args = [], opts = {}) {
   if (/\.[cm]?js$/i.test(cmd)) return [process.execPath, [cmd, ...args], opts]
   if (process.platform === 'win32' && isBatchShim(cmd)) {
@@ -35,7 +35,7 @@ function isBatchShim(cmd) {
 // Node passes shell:true args to cmd.exe unquoted; protect spaces and cmd
 // metacharacters. cmd escapes an embedded double-quote by doubling it. Note:
 // %VAR% / !VAR! expansion cannot be fully suppressed on a cmd line even when
-// quoted — an unavoidable cmd limitation for args reaching a .cmd/.bat shim.
+// quoted; an unavoidable cmd limitation for args reaching a .cmd/.bat shim.
 function winQuote(a) {
   if (a === '') return '""'
   if (!/[\s"&|<>^()%!]/.test(a)) return a

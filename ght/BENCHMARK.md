@@ -2,29 +2,29 @@
 
 Token cost of reading `gh` output in an agent context, before and after `ght`.
 
-- **Baseline (`raw gh`)**: the exact bytes `gh` prints when piped — what a coding
-  agent sees in its context today.
+- **Baseline (`raw gh`)**: the exact bytes `gh` prints when piped (what a coding
+  agent sees in its context today).
 - **`ght` default**: same data, noise fields pruned (`node_id`, `gravatar_id`,
   `_links`, `*_url` except `url`/`html_url`), embedded entities collapsed
   (users → login, repos → full_name, labels → names, empty arrays → "",
   PGP verification blobs dropped), encoded as comma-delimited TOON.
 - `gh`'s piped output is **already minified JSON**, so the baseline is the
-  hardest version of it — none of the savings below come from whitespace.
+  hardest version of it; none of the savings below come from whitespace.
 - Intermediate columns isolate the two effects: compaction only (pruned +
   collapsed data as minified JSON) and TOON encoding only (full-fidelity data).
-  Note TOON *alone* loses to minified JSON on GitHub payloads — rows are too
+  Note TOON *alone* loses to minified JSON on GitHub payloads. Rows are too
   non-uniform for tabular form. Compaction is what makes the data
   TOON-friendly; the combination is where the savings come from.
 - No-prune TOON output is verified to `decode()` back deep-equal to the source
   JSON (lossless encoding): 4/8 scenarios verified
-  (api-issues, api-pulls, api-commits, api-releases skipped — `@toon-format/toon` 2.3.0's *decoder* mis-parses quoted
+  (api-issues, api-pulls, api-commits, api-releases skipped: `@toon-format/toon` 2.3.0's *decoder* mis-parses quoted
   strings containing markdown-link patterns; the encoded text itself is
   correctly quoted). Pruning is the only lossy step and is opt-out
   (`--ght-no-prune`).
 - Live data captured previously (offline recompute) from the public `cli/cli` repo; payloads saved in
-  `bench/fixtures/` — reproduce with `npm run bench:offline`.
+  `bench/fixtures/`. Reproduce with `npm run bench:offline`.
 
-## Results — o200k_base tokenizer (GPT-4o/o1 family)
+## Results: o200k_base tokenizer (GPT-4o/o1 family)
 
 | Scenario | raw `gh` (JSON) | compaction only (JSON) | TOON only (no compaction) | **`ght` (both)** | **saved** |
 |---|--:|--:|--:|--:|--:|
@@ -38,7 +38,7 @@ Token cost of reading `gh` output in an agent context, before and after `ght`.
 | gh api .../releases?per_page=10 | 134,345 | 53,303 | 145,889 | **47,804** | **64.4%** |
 | **Total** | **273,627** | **107,583** | **293,768** | **103,514** | **62.2%** |
 
-## Results — cl100k_base tokenizer (GPT-4 family)
+## Results: cl100k_base tokenizer (GPT-4 family)
 
 | Scenario | raw `gh` (JSON) | compaction only (JSON) | TOON only (no compaction) | **`ght` (both)** | **saved** |
 |---|--:|--:|--:|--:|--:|
@@ -62,7 +62,7 @@ Comma is the better default on this data.
 
 - Claude's tokenizer is not public; o200k_base and cl100k_base are the standard
   proxies. The savings here are structural (fewer fields, no repeated keys, no
-  JSON punctuation), not artifacts of one tokenizer — which is why the two
+  JSON punctuation), not artifacts of one tokenizer, which is why the two
   tokenizers agree closely.
 - `gh ... --json` scenarios have no hypermedia noise, so their savings come from
   entity collapsing + tabular TOON (`run list` is the pure-TOON case: nothing

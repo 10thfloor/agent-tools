@@ -40,7 +40,7 @@ export function workStatus(wt, mainBranch) {
 // Generated one-liner describing the work in a worktree, derived live from
 // git state. A stored note (wt new -m / wt note) takes precedence upstream.
 export function autoSummary(wt, work) {
-  if (wt.prunable) return 'stale — directory missing'
+  if (wt.prunable) return 'stale (directory missing)'
   if (work.dirty > 0) {
     const stat = work.shortstat ? ` ${work.shortstat}` : ''
     return `editing ${topDirs(work.files)} (${work.dirty} file${work.dirty === 1 ? '' : 's'}${stat})`
@@ -62,7 +62,7 @@ function topDirs(files) {
 }
 
 // Open PRs keyed by head branch, via gh. null = unavailable (no gh, no
-// GitHub remote, not authenticated) — callers degrade silently.
+// GitHub remote, not authenticated); callers degrade silently.
 export function openPrsByBranch(cwd, env = process.env) {
   const gh = env.WTREE_GH || 'gh'
   const r = spawnSync(...prepSpawn(gh, ['pr', 'list', '--state', 'open', '--json', 'number,isDraft,headRefName,url', '--limit', '200'], {

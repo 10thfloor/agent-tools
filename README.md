@@ -5,17 +5,17 @@ self-contained (own `package.json`, own tests); this repo is the suite.
 
 | Tool | Command | One-liner |
 |---|---|---|
-| [ght](ght/) | `ght` | Same `gh` commands, a third of the tokens — GitHub's JSON noise pruned, TOON out (**62% benchmarked**, [proof](ght/BENCHMARK.md)) |
-| [wtree](wtree/) | `wtree` | Parallel work minus the ceremony — guarded one-command worktrees that know what's active, and why |
-| [tt](tt/) | `tt` | Runs your tests without flooding agent context — a ~40-token verdict by default, every detail on demand from one cached run |
-| [tj](tj/) | `tj` | Any JSON-speaking CLI in TOON — profiles strip what agents never read (kubectl, aws, gh, …) |
-| [fleet](fleet/) | `fleet` | Your whole workspace at a glance — every repo's worktrees, PRs, and live agents in one table |
-| [tok](tok/) | `tok` | Know the token cost before you paste — real tokenizer counts, a CI-ready budget gate, and verified-lossless JSON→TOON packing |
-| [bench](bench/) | `bench` | Prove the savings on *your* repos — A/B a baseline command against its wrapped form, count real tokens, gate it in CI |
+| [ght](ght/) | `ght` | Same `gh` commands, a third of the tokens: GitHub's JSON noise pruned, TOON out (**62% benchmarked**, [proof](ght/BENCHMARK.md)) |
+| [wtree](wtree/) | `wtree` | Parallel work minus the ceremony: guarded one-command worktrees that know what's active, and why |
+| [tt](tt/) | `tt` | Runs your tests without flooding agent context: a ~40-token verdict by default, every detail on demand from one cached run |
+| [tj](tj/) | `tj` | Any JSON-speaking CLI in TOON. Profiles strip what agents never read (kubectl, aws, gh, …) |
+| [fleet](fleet/) | `fleet` | Your whole workspace at a glance: every repo's worktrees, PRs, and live agents in one table |
+| [tok](tok/) | `tok` | Know the token cost before you paste: real tokenizer counts, a CI-ready budget gate, and verified-lossless JSON→TOON packing |
+| [bench](bench/) | `bench` | Prove the savings on *your* repos. A/B a baseline command against its wrapped form, count real tokens, gate it in CI |
 
 ## Examples & benchmarks
 
-**Don't take our word for it** — [`bench`](bench/) measures the savings on
+**Don't take our word for it**. [`bench`](bench/) measures the savings on
 your own repos and commands: `bench init`, edit `bench.json`, run `bench`.
 (On the public `cli/cli` repo it reproduces ~48–76% per scenario.)
 
@@ -34,7 +34,7 @@ $ ght pr list -R cli/cli --limit 2 --json number,title,author,state
 ```
 
 **Benchmark:** 273,627 → 103,514 tokens across 8 real workloads
-(`pr list`, `issue list`, `api .../pulls`, releases, commits, …) —
+(`pr list`, `issue list`, `api .../pulls`, releases, commits, …):
 **62.2% saved**, o200k and cl100k tokenizers agreeing.
 Methodology + per-scenario table: [ght/BENCHMARK.md](ght/BENCHMARK.md).
 
@@ -52,13 +52,13 @@ $ wtree clean --yes                             # sweep everything idle
 
 **Benchmark:** one command replaces the `worktree add`/`remove`/`prune` +
 branch bookkeeping, with guardrails (never main, never dirty work). Piped
-list is TOON: 122 vs 144 JSON tokens even on a tiny 2-worktree repo — the
+list is TOON: 122 vs 144 JSON tokens even on a tiny 2-worktree repo. The
 gap grows with rows; the real win is the activity intelligence.
 
 ### tt
 
 Fronts your real test runner and manages what reaches agent context:
-verdict by default, any depth of detail on demand — all from one cached
+verdict by default, any depth of detail on demand. All from one cached
 run, never a re-execution.
 
 ```
@@ -73,10 +73,10 @@ failures[1]{n,head,detail}:
 ```
 
 **Benchmark:** the verdict for a 38-test run costs **39 tokens** (raw
-output: 653 — **94% less**), and a failure can never be lost to output
-truncation — the verdict is small by construction. The cache makes second
+output: 653, **94% less**), and a failure can never be lost to output
+truncation. The verdict is small by construction. The cache makes second
 looks free: `tt --tt-last` re-reads, `tt --tt-fail=2` fetches one failure's
-full stack, `tt --tt-full` replays the complete log — no re-runs. vitest
+full stack, `tt --tt-full` replays the complete log (no re-runs). vitest
 and jest verdicts are exact (native JSON report); other runners use tuned
 heuristics.
 
@@ -111,14 +111,14 @@ gather concurrently. TOON piped: 101 vs 128 JSON tokens for two repos.
 
 ```
 $ tok CLAUDE.md AGENTS.md            # real tokenizer counts + total
-$ tok --max=5k CLAUDE.md             # exit 1 when over — CI/pre-commit gate
+$ tok --max=5k CLAUDE.md             # exit 1 when over (CI/pre-commit gate)
 $ tok -- git diff                    # price a diff before pasting it
 $ gh run list --json … | tok --pack  # lossless JSON→TOON, round-trip verified
 ```
 
 **Benchmark:** tok is the measuring instrument (every number in this
 section was counted with it). Its `--pack` mode reports itself honestly:
-30% saved on a uniform 20-run list, −6% on a deep repo object — lossless
+30% saved on a uniform 20-run list, −6% on a deep repo object; lossless
 packing only wins on record-shaped data, and the footer says which case
 you're in.
 
@@ -129,7 +129,7 @@ All seven follow the same contract, so agents (and humans) can predict them:
 1. **TTY → human, pipe → TOON.** Tables and streams for people; compact
    [TOON](https://github.com/toon-format/toon) for agents, automatically.
 2. **stdout is data-only.** Paths, listings, converted output. All friendly
-   messages, footers, and hints go to stderr — `cd "$(wtree new x)"` works.
+   messages, footers, and hints go to stderr; `cd "$(wtree new x)"` works.
 3. **One idempotent command per intent.** Re-running is always safe.
 4. **Exit codes and stderr pass through** from wrapped commands, always.
 5. **Degrade silently.** No `gh`? No `lsof`? Columns go empty; nothing breaks.
@@ -149,19 +149,19 @@ snippets for `CLAUDE.md`/`AGENTS.md`.
 
 ## Platforms
 
-All seven tools run on **Linux, macOS, and Windows** — CI runs every tool's
+All seven tools run on **Linux, macOS, and Windows**; CI runs every tool's
 test suite on all three (`.github/workflows/ci.yml`). `npm link` installs
 working command shims on every platform.
 
 Windows specifics:
 
-- The worktree tool is **`wtree`**, not `wt` — `wt.exe` is Windows
-  Terminal's launcher and ships with Windows.
+- The worktree tool is **`wtree`**, not `wt` (`wt.exe` is Windows
+  Terminal's launcher and ships with Windows).
 - Child processes are spawned without a shell for real executables (git, gh,
   …); `.cmd`/`.bat` shims like `npm` are detected and run correctly (Node
   blocks spawning those without a shell). `tj vercel …` and friends work.
 - `wtree`'s agent detection uses `lsof` (macOS/Linux only); on Windows that
-  one signal is simply absent — every other column still works.
+  one signal is simply absent. Every other column still works.
 - The `cd "$(wtree new x)"` trick is bash/zsh. In PowerShell:
   `Set-Location (wtree new x)`.
 

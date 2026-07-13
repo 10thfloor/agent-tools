@@ -1,11 +1,11 @@
-# Spec: tok — token counter and budget linter for agent-facing text
+# Spec: tok (token counter and budget linter for agent-facing text)
 
 ## Objective
 
 Agent-facing text (CLAUDE.md, AGENTS.md, prompts, diffs, command output)
 silently bloats, and nobody notices until context windows hurt. `tok`
 counts real tokens (gpt-tokenizer, o200k_base default) for files, command
-output, or stdin — and gates budgets: `tok --max 5k CLAUDE.md` exits 1 when
+output, or stdin. It also gates budgets: `tok --max 5k CLAUDE.md` exits 1 when
 over, so it works as a pre-commit/CI check.
 
 ### Assumptions (autonomous session)
@@ -18,12 +18,12 @@ over, so it works as a pre-commit/CI check.
 
 ## CLI Contract
 
-- `tok <file...>` — per-file rows + total. Table on TTY, TOON piped,
+- `tok <file...>`: per-file rows + total. Table on TTY, TOON piped,
   `--json` for scripts.
-- `tok -- <command...>` — count the command's stdout (e.g. `tok -- git diff`).
-- `... | tok` — count stdin when no files/command given.
-- `--max=<n|Nk|Nm>` — mark rows over budget; exit 1 if any input is over.
-- `--pack` — losslessly re-encode exactly one JSON input as TOON on stdout;
+- `tok -- <command...>`: count the command's stdout (e.g. `tok -- git diff`).
+- `... | tok`: count stdin when no files/command given.
+- `--max=<n|Nk|Nm>`: mark rows over budget; exit 1 if any input is over.
+- `--pack`: losslessly re-encode exactly one JSON input as TOON on stdout;
   stderr reports measured before/after tokens and a round-trip check
   (verified / skipped for the known upstream decoder bug with markdown-link
   strings / hard-refuse on genuine mismatch). Non-JSON is refused: prose

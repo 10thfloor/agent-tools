@@ -46,12 +46,12 @@ export function cmdNew(cwd, branch, flags, env = process.env) {
     branch = `pr-${flags.pr}`
   } else if (!branch) {
     branch = nextGenericBranch(cwd)
-    log(`• no branch name given — using '${branch}' (add intent with -m "...")`)
+    log(`• no branch name given, using '${branch}' (add intent with -m "...")`)
   }
   const existing = items.find((w) => w.branch === branch && !w.prunable)
   if (existing) {
     if (flags.note) setNote(cwd, branch, flags.note)
-    log(`✓ worktree for '${branch}' already exists — reusing${flags.note ? ' (note updated)' : ''}`)
+    log(`✓ worktree for '${branch}' already exists, reusing${flags.note ? ' (note updated)' : ''}`)
     out(existing.path)
     return 0
   }
@@ -93,7 +93,7 @@ export function cmdNew(cwd, branch, flags, env = process.env) {
   const { copied, skipped } = copyIncluded(items[0].path, dest)
   if (copied) log(`• copied ${copied} item(s) from .worktreeinclude`)
   if (skipped) log(`⚠ skipped ${skipped} .worktreeinclude entr(y/ies) that escaped the repo`)
-  log(`✓ worktree ready (${how})${note ? ` — "${note}"` : ''}`)
+  log(`✓ worktree ready (${how})${note ? `: "${note}"` : ''}`)
   out(dest)
   return 0
 }
@@ -113,7 +113,7 @@ export function cmdNote(cwd, args) {
   }
   const wt = ref ? findWorktree(items, ref) : worktreeAt(items, realpathSync(cwd))
   if (!wt) {
-    log(ref ? `wtree: no worktree matches '${ref}'` : 'wtree: not inside a worktree — wtree note <branch> <text>')
+    log(ref ? `wtree: no worktree matches '${ref}'` : 'wtree: not inside a worktree; use wtree note <branch> <text>')
     return 1
   }
   if (!wt.branch) {
@@ -131,7 +131,7 @@ export function cmdNote(cwd, args) {
 
 export function cmdRm(cwd, ref, flags) {
   if (!ref) {
-    log('wtree: branch or path required — wtree rm <branch>')
+    log('wtree: branch or path required: wtree rm <branch>')
     return 2
   }
   const items = listWorktrees(cwd)
@@ -147,7 +147,7 @@ export function cmdRm(cwd, ref, flags) {
   return removeOne(items[0].path, wt, flags)
 }
 
-// `main` is the main worktree path — git runs there, not in the worktree being
+// `main` is the main worktree path; git runs there, not in the worktree being
 // removed (which may be the caller's cwd and about to vanish).
 function removeOne(main, wt, flags) {
   const cwd = main
@@ -157,7 +157,7 @@ function removeOne(main, wt, flags) {
   } else {
     const dirty = (tryGit(['-C', wt.path, 'status', '--porcelain']) ?? '').split('\n').filter(Boolean).length
     if (dirty > 0 && !flags.force) {
-      log(`wtree: '${wt.branch ?? wt.path}' has ${dirty} uncommitted change(s) — commit first, or wtree rm --force`)
+      log(`wtree: '${wt.branch ?? wt.path}' has ${dirty} uncommitted change(s); commit first, or wtree rm --force`)
       return 1
     }
     git(['worktree', 'remove', ...(flags.force ? ['--force'] : []), wt.path], { cwd })
@@ -169,7 +169,7 @@ function removeOne(main, wt, flags) {
     } else if (flags.force && tryGit(['branch', '-D', wt.branch], { cwd }) !== null) {
       log(`✓ force-deleted branch '${wt.branch}'`)
     } else {
-      log(`• kept branch '${wt.branch}' (unmerged work — \`git branch -D ${wt.branch}\` to discard)`)
+      log(`• kept branch '${wt.branch}' (unmerged work; \`git branch -D ${wt.branch}\` to discard)`)
     }
   }
   return 0
@@ -180,12 +180,12 @@ export function cmdClean(cwd, flags, env = process.env) {
   const mainPath = entries.find((e) => e.wt.isMain)?.wt.path ?? cwd
   const candidates = entries.filter((e) => !e.wt.isMain && !e.activity.active)
   if (!candidates.length) {
-    log('✓ nothing to clean — every worktree is active (or main)')
+    log('✓ nothing to clean: every worktree is active (or main)')
     return 0
   }
   for (const e of candidates) log(`  ○ ${e.wt.branch ?? '(detached)'}  ${e.wt.path}`)
   if (!flags.yes) {
-    log(`${candidates.length} idle worktree(s) would be removed — rerun with --yes to confirm`)
+    log(`${candidates.length} idle worktree(s) would be removed; rerun with --yes to confirm`)
     return 0
   }
   let code = 0

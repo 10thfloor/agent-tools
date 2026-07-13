@@ -1,6 +1,6 @@
 import { cmdList, cmdNew, cmdRm, cmdClean, cmdPath, cmdNote } from './commands.js'
 
-export const USAGE = `wtree — friendly git worktrees, per project
+export const USAGE = `wtree: friendly git worktrees, per project
 
 Usage:
   wtree [list] [--toon|--json|--table]     list worktrees + activity (default)
@@ -91,7 +91,7 @@ export function runWtree(argv, env = process.env) {
   } catch (err) {
     const msg = /not a git repository/i.test(err.message) ? 'not inside a git repository'
       : /invalid reference: HEAD|does not have any commits/i.test(err.message)
-        ? 'this repository has no commits yet — make an initial commit first'
+        ? 'this repository has no commits yet; make an initial commit first'
         : err.message
     process.stderr.write(`wtree: ${msg}\n`)
     return 1

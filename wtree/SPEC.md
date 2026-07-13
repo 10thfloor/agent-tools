@@ -1,4 +1,4 @@
-# Spec: wtree — friendly git worktrees, per project
+# Spec: wtree (friendly git worktrees, per project)
 
 ## Objective
 
@@ -12,7 +12,7 @@ one-command create/remove and an activity-aware list that separates
 agent/process working in it, or git-locked) from **idle** ones (none of
 those). Output is agent-first: human table on a TTY, TOON when piped.
 
-### Assumptions (autonomous session — flagging instead of asking)
+### Assumptions (autonomous session, flagging instead of asking)
 
 1. "Per project" = the tool lives in the agent-tools suite (the `wtree/`
    package) **and** operates on whatever repo you run it in;
@@ -44,32 +44,32 @@ Run:     wtree / wtree new <branch> / wtree rm <branch> / wtree clean / wtree pa
 
 ## CLI Contract
 
-- `wtree` / `wtree list` — every worktree with branch, activity reasons
+- `wtree` / `wtree list`: every worktree with branch, activity reasons
   (`dirty:N`, `unpushed:N`, `pr:#N`, `agent`, `locked`), PR number, path.
   Format: table on TTY, TOON piped, `--json` for scripts.
-- `wtree new [branch] [-m <note>] [--from <ref>]` — one command, idempotent:
+- `wtree new [branch] [-m <note>] [--from <ref>]` (one command, idempotent):
   reuses the worktree if it exists, else uses the local branch, else tracks
   `origin/<branch>`, else creates a branch from `--from`/HEAD. Branch name
-  optional — generic names `wtree-1`, `wtree-2`, … are generated. `-m` stores a
+  optional. Generic names `wtree-1`, `wtree-2`, … are generated. `-m` stores a
   one-line intent note in `branch.<name>.description`. **stdout is the
   worktree path only** (so `cd "$(wtree new x)"` works); friendly summary goes
   to stderr.
-- `wtree note [branch] [text]` — show or set the note; inside a worktree the
+- `wtree note [branch] [text]`: show or set the note; inside a worktree the
   branch is inferred (deepest containing worktree wins).
-- `wtree new --pr <n>` — fetches `pull/<n>/head` from origin (fork PRs work,
+- `wtree new --pr <n>`: fetches `pull/<n>/head` from origin (fork PRs work,
   gh not required) into branch `pr-<n>`; note auto-set from the PR title
   via gh when available. Mutually exclusive with a branch argument.
-- `.worktreeinclude` (Claude Code-compatible; glob subset, no negation) —
+- `.worktreeinclude` (Claude Code-compatible; glob subset, no negation):
   matching gitignored files are copied into freshly created worktrees,
   never overwriting.
 - The list's `work` column = stored note, else a summary generated live from
   git state (dirty dirs + diffstat / commits ahead of main + last subject /
   "no work yet").
-- `wtree rm <branch|path> [--force]` — refuses to remove the main worktree;
+- `wtree rm <branch|path> [--force]`: refuses to remove the main worktree;
   refuses dirty worktrees without `--force`; prunes; deletes merged branch.
-- `wtree clean [--yes]` — plans removal of all idle worktrees; executes only
+- `wtree clean [--yes]`: plans removal of all idle worktrees; executes only
   with `--yes`.
-- `wtree path <branch>` — prints the path (exit 1 if absent). Shell helper:
+- `wtree path <branch>`: prints the path (exit 1 if absent). Shell helper:
   `wtc() { cd "$(wtree new "$1")"; }`.
 - Errors are one friendly line on stderr, exit 1; usage errors exit 2.
 - Env: `WTREE_GH` (alternate gh binary; tests stub it), `WTREE_NO_PROC=1`.

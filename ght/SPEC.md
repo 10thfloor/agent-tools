@@ -1,4 +1,4 @@
-# Spec: ght — token-efficient `gh` wrapper for coding agents
+# Spec: ght (token-efficient `gh` wrapper for coding agents)
 
 ## Objective
 
@@ -15,7 +15,7 @@ Success = a benchmark over representative real `gh` calls showing a large
 (target: >50% aggregate) token reduction versus what an agent sees today,
 measured with real tokenizers, with no loss of the data agents actually use.
 
-### Assumptions (autonomous session — flagging instead of asking)
+### Assumptions (autonomous session, flagging instead of asking)
 
 1. Wrapper is a Node.js CLI (`ght`) in the agent-tools suite (the `ght/`
    package); not published to npm as part of this task.
@@ -77,7 +77,7 @@ ght/
 - Multiple top-level arrays (paginated pages) are merged into one array.
 - Flags consumed by ght (never forwarded): `--ght-raw` (pure passthrough),
   `--ght-no-prune`, `--ght-json` (prune + minified JSON instead of TOON),
-  `--ght-delimiter=comma|tab|pipe` (comma default — benchmarked cheaper than
+  `--ght-delimiter=comma|tab|pipe` (comma default, benchmarked cheaper than
   tab on real payloads), `--ght-no-stats`, `--ght-help`.
 - After each conversion a one-line tokens-saved footer is written to stderr
   (chars/4 estimate, marked `~`; stdout stays clean TOON). Off via

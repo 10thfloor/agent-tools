@@ -3,7 +3,7 @@ import { loadConfig, writeTemplate } from './config.js'
 import { runScenario, aggregate } from './run.js'
 import { toToon, toJson, toTable, toMarkdown } from './report.js'
 
-export const USAGE = `bench — token A/B benchmarks on your own workloads
+export const USAGE = `bench: token A/B benchmarks on your own workloads
 
 Usage:
   bench init [--force]         write a bench.json template (edit OWNER/REPO)
@@ -70,7 +70,7 @@ export async function runBench(argv) {
       process.stderr.write(err.message + '\n')
       return 2
     }
-    process.stderr.write('bench: wrote bench.json — edit OWNER/REPO, then run `bench`\n')
+    process.stderr.write('bench: wrote bench.json; edit OWNER/REPO, then run `bench`\n')
     return 0
   }
 
@@ -101,7 +101,7 @@ export async function runBench(argv) {
   const gateMiss = flags.minSaved != null && agg.savedPct < flags.minSaved
   process.stderr.write(`bench: ${agg.savedPct}% saved across ${agg.measured} scenario(s) (${encName})`
     + `${agg.failed ? `, ${agg.failed} failed` : ''}`
-    + `${gateMiss ? ` — BELOW --min-saved=${flags.minSaved}%` : ''}\n`)
+    + `${gateMiss ? `; BELOW --min-saved=${flags.minSaved}%` : ''}\n`)
 
   if (agg.failed > 0 || gateMiss) return 1
   return 0

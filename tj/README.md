@@ -1,4 +1,4 @@
-# tj — TOON-ify any JSON-speaking CLI
+# tj: TOON-ify any JSON-speaking CLI
 
 The [ght](../ght/) trick, generalized: `tj <command...>` runs any
 CLI and re-emits JSON stdout as comma-delimited TOON, after applying a
@@ -18,9 +18,9 @@ $ tj aws ec2 describe-instances    # aws profile: ResponseMetadata gone
 $ tj vercel ls --json              # unknown CLI: generic profile, TOON only
 ```
 
-Profiles: `github` (gh — same rules as ght: hypermedia URL pruning, users →
+Profiles: `github` (gh, same rules as ght: hypermedia URL pruning, users →
 login, repos → full_name, labels → names, PGP blobs trimmed), `kubernetes`
-(kubectl/oc — drops `managedFields`, `selfLink`, the
+(kubectl/oc, drops `managedFields`, `selfLink`, the
 last-applied-configuration annotation), `aws` (drops `ResponseMetadata`),
 `generic` (encoding only). Add profiles in `src/profiles.js`.
 

@@ -1,18 +1,18 @@
-# Spec: tt — agent-facing test running with progressive disclosure
+# Spec: tt (agent-facing test running with progressive disclosure)
 
 ## Objective
 
 Test output is the most re-read text in any agent loop, and almost all of
 it is passing noise. `tt` fronts the project's real test runner and manages
-what reaches agent context. Default tier: the verdict — exit code
+what reaches agent context. Default tier is the verdict: exit code
 (unchanged), summary counts, one structured row per failure (name,
 file:line, assertion) as TOON. Deeper tiers stay accessible on demand
 without re-running, from the cache of the run that already happened:
 `--tt-fail=<n>` for one failure's complete block, `--tt-full` for the whole
 raw log, `--tt-last` to replay the verdict. tt never evaluates anything
-itself — the agent judges; tt keeps judging cheap and truncation-proof. On
-a TTY it streams through unchanged — a safety behavior for humans, not the
-use case.
+itself. The agent judges; tt keeps judging cheap and truncation-proof. On
+a TTY it streams through unchanged (a safety behavior for humans, not the
+use case).
 
 ### Assumptions (autonomous session)
 
@@ -26,10 +26,10 @@ use case.
 
 ## CLI Contract
 
-- `tt` — runs the detected test command (package.json `scripts.test` →
+- `tt`: runs the detected test command (package.json `scripts.test` →
   `npm test --silent`; pytest.ini/pyproject → `pytest`; Cargo.toml →
   `cargo test`; go.mod → `go test ./...`; else a friendly error).
-- `tt <any command...>` — condense that command instead.
+- `tt <any command...>`: condense that command instead.
 - Child's exit code is always propagated. TTY = passthrough + cache;
   piped = condensed TOON (`--tt-json` for JSON, `--tt-raw` to disable).
 - `--tt-last` replays the stored verdict; `--tt-fail=<n>` prints one

@@ -116,5 +116,5 @@ test('autoSummary: generated one-liners per state', () => {
     '2 commits, last: fix tokens',
   )
   assert.equal(autoSummary({ ...wt, isMain: true }, { ...EMPTY_WORK, lastSubject: 'init' }), 'at: init')
-  assert.equal(autoSummary({ ...wt, prunable: true }, EMPTY_WORK), 'stale — directory missing')
+  assert.equal(autoSummary({ ...wt, prunable: true }, EMPTY_WORK), 'stale (directory missing)')
 })
