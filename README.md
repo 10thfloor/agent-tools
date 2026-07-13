@@ -15,14 +15,14 @@ self-contained (own `package.json`, own tests); this repo is the suite.
 
 ## Examples & benchmarks
 
+**Don't take our word for it** — [`bench`](bench/) measures the savings on
+your own repos and commands: `bench init`, edit `bench.json`, run `bench`.
+(On the public `cli/cli` repo it reproduces ~48–76% per scenario.)
+
 Numbers below are live measurements counted with `tok` (o200k_base) on
 2026-07-13, except ght's, which come from its committed formal benchmark.
 The stderr footers the tools print are quick `~` estimates; these are real
 tokenizer counts.
-
-**Don't take our word for it** — [`bench`](bench/) measures the savings on
-your own repos and commands: `bench init`, edit `bench.json`, run `bench`.
-(On the public `cli/cli` repo it reproduces ~48–76% per scenario.)
 
 ### ght
 
