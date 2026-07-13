@@ -52,6 +52,48 @@ test('--tt-last re-condenses from cache; --tt-full returns raw output', () => {
   assert.match(full.stdout, /✖ fails hard|not ok/)
 })
 
+test('--tt-fail prints the complete cached block for one failure', () => {
+  const { proj, cache } = makeProject()
+  tt(['node', '--test', 'test/m.test.js'], proj, cache)
+  const r = tt(['--tt-fail=1'], proj, cache)
+  assert.equal(r.status, 0)
+  assert.match(r.stdout, /✖ fails hard/)
+  assert.match(r.stdout, /AssertionError/)
+  assert.doesNotMatch(r.stdout, / \| /) // real lines, not the condensed join
+  const missing = tt(['--tt-fail=7'], proj, cache)
+  assert.equal(missing.status, 1)
+  assert.match(missing.stderr, /no failure #7/)
+})
+
+test('vitest-style scripts get exact counts from the native JSON report', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'tt-vit-'))
+  const proj = join(dir, 'proj')
+  mkdirSync(proj, { recursive: true })
+  // The fake runner prints no heuristic markers, so exact counts can only
+  // come from the report file it writes to --outputFile.
+  writeFileSync(join(proj, 'vitest-fake.mjs'), `import { writeFileSync } from 'node:fs'
+const out = process.argv.find((a) => a.startsWith('--outputFile=')).slice('--outputFile='.length)
+writeFileSync(out, JSON.stringify({
+  numTotalTests: 5, numPassedTests: 3, numFailedTests: 2,
+  testResults: [{ name: 'src/a.test.ts', assertionResults: [
+    { status: 'failed', fullName: 'parses empty input', failureMessages: ['AssertionError: expected [] to have length 1\\n    at src/a.test.ts:14:3'] },
+    { status: 'failed', fullName: 'handles nulls', failureMessages: ['TypeError: boom'] },
+  ]}],
+}))
+console.log('plain human reporter text, no markers here')
+process.exit(1)
+`)
+  writeFileSync(join(proj, 'package.json'), JSON.stringify({ name: 'v', type: 'module', scripts: { test: 'node vitest-fake.mjs' } }))
+  const r = tt([], proj, join(dir, 'cache'))
+  assert.equal(r.status, 1)
+  const report = decode(r.stdout)
+  assert.equal(report.summary.failed, 2)
+  assert.equal(report.summary.passed, 3)
+  assert.match(report.summary.runner, /vitest \(json report\)/)
+  assert.equal(report.failures[0].head, '✖ parses empty input')
+  assert.match(report.failures[0].detail, /a\.test\.ts:14/)
+})
+
 test('default command detection uses package.json scripts.test', () => {
   const { proj, cache } = makeProject()
   const r = tt([], proj, cache)

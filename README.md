@@ -3,14 +3,14 @@
 Small CLIs that make coding-agent workflows cheaper and calmer. Each tool is
 self-contained (own `package.json`, own tests); this repo is the suite.
 
-| Tool | Command | What it does |
+| Tool | Command | One-liner |
 |---|---|---|
-| [ght](ght/) | `ght` | `gh` wrapper that re-emits JSON as TOON after pruning GitHub API noise — benchmarked **62% token reduction** ([benchmark](ght/BENCHMARK.md)) |
-| [wt](wt/) | `wt` | friendly git worktrees, per project: one-command create/remove, activity-aware list (dirty / PR / agent-detected), notes + generated work summaries |
-| [tt](tt/) | `tt` | runs the test suite, returns an agent-readable verdict: summary + one row per failure (file:line, assertion) + exit code, cached for re-query |
-| [tj](tj/) | `tj` | TOON-ify **any** JSON-speaking CLI with per-CLI prune profiles (gh, kubectl/oc, aws, generic) |
-| [fleet](fleet/) | `fleet` | cross-project overview: every repo's worktrees, PRs, work summaries, and live agents in one table (powered by `wt` per repo) |
-| [tok](tok/) | `tok` | token counter + budget linter for agent-facing text — real tokenizer counts for files, command output, stdin; `--max` gates exit codes |
+| [ght](ght/) | `ght` | Same `gh` commands, a third of the tokens — GitHub's JSON noise pruned, TOON out (**62% benchmarked**, [proof](ght/BENCHMARK.md)) |
+| [wt](wt/) | `wt` | Parallel work minus the ceremony — guarded one-command worktrees that know what's active, and why |
+| [tt](tt/) | `tt` | Run the tests, read a ~40-token verdict — failures truncation-proof, second looks free |
+| [tj](tj/) | `tj` | Any JSON-speaking CLI in TOON — profiles strip what agents never read (kubectl, aws, gh, …) |
+| [fleet](fleet/) | `fleet` | Your whole workspace at a glance — every repo's worktrees, PRs, and live agents in one table |
+| [tok](tok/) | `tok` | Know the token cost before you paste — real tokenizer counts plus a CI-ready budget gate |
 
 ## Examples & benchmarks
 
@@ -68,8 +68,10 @@ failures[1]{n,head,detail}:
 **Benchmark:** the verdict for a 38-test run costs **39 tokens** (raw
 output: 653 — **94% less**), and a failure can never be lost to output
 truncation — the verdict is small by construction. The cache makes second
-looks free: `tt --tt-last` re-reads, `tt --tt-full` replays the complete
-log, no re-run.
+looks free: `tt --tt-last` re-reads, `tt --tt-fail=2` fetches one failure's
+full stack, `tt --tt-full` replays the complete log — no re-runs. vitest
+and jest verdicts are exact (native JSON report); other runners use tuned
+heuristics.
 
 ### tj
 

@@ -33,6 +33,7 @@ Every run is cached, so a different view of the results never costs
 another suite execution:
 
 - `tt --tt-last` — the verdict again, no re-run
+- `tt --tt-fail=2` — failure #2's **complete** block (full stack, uncapped)
 - `tt --tt-full` — the complete raw log of the cached run
 - `tt <command...>` — wrap something other than the detected runner
 - `--tt-max=<n>` failure-row cap (default 40), `--tt-json`, `--tt-raw`
@@ -44,9 +45,12 @@ Exit codes always propagate, so `tt && deploy` gates correctly.
 - In a human terminal (TTY), `tt` streams output through untouched and just
   caches — a safety behavior so it's harmless interactively, not a feature.
   **tt is for agents' test loops.**
-- Failure extraction is heuristic (markers for node:test, vitest, jest,
-  pytest, go, cargo, TAP) plus per-runner total parsing; unknown runners
-  fall back to counting failure blocks. Env: `TT_CACHE_DIR`.
+- When the default `npm test` script runs **vitest or jest**, tt asks the
+  runner for its native JSON report and the verdict is exact (runner shows
+  as `vitest (json report)`); explicit `tt <command...>` invocations are
+  never rewritten. Everything else uses tuned heuristics (markers for
+  node:test, vitest, jest, pytest, go, cargo, TAP) with block-counting as
+  the last resort. Env: `TT_CACHE_DIR`.
 
 ## Agent snippet (CLAUDE.md / AGENTS.md)
 
@@ -55,6 +59,7 @@ Exit codes always propagate, so `tt && deploy` gates correctly.
 Run tests with `tt`. It executes the project's test command and returns an
 agent-readable verdict: summary counts, one row per failure (file:line +
 assertion), and the child's exit code. `tt --tt-last` re-reads the previous
-verdict without re-running; use `tt --tt-full` only when the condensed
-detail is insufficient.
+verdict without re-running; `tt --tt-fail=<n>` fetches one failure's full
+stack from the cache; use `tt --tt-full` only when even that is
+insufficient.
 ```

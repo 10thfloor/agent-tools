@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { stripAnsi, extractFailures, extractSummary, condense } from '../src/condense.js'
+import { stripAnsi, extractFailures, extractSummary, condense, fullFailure } from '../src/condense.js'
 
 const NODE_OUT = `✔ adds numbers (1.2ms)
 ✖ subtracts numbers (3.4ms)
@@ -73,6 +73,16 @@ test('passing run condenses to zero failures', () => {
   const report = condense('✔ all good (1ms)\nℹ tests 1\nℹ pass 1\nℹ fail 0\n', 0, 'npm test')
   assert.equal(report.summary.failed, 0)
   assert.equal(report.failures.length, 0)
+})
+
+test('fullFailure returns the complete uncapped block, out-of-range is null', () => {
+  const stack = Array.from({ length: 30 }, (_, i) => `      at frame${i} (file.js:${i}:1)`).join('\n')
+  const out = `✖ deep failure (9ms)\n  AssertionError: nope\n${stack}\n\n✔ fine (1ms)\n`
+  const block = fullFailure(out, 1)
+  assert.match(block, /^✖ deep failure/)
+  assert.match(block, /frame25/) // beyond the 8-line condensed cap
+  assert.equal(block.includes(' | '), false) // real lines, not joined
+  assert.equal(fullFailure(out, 2), null)
 })
 
 test('maxBlocks caps rows and reports truncation', () => {

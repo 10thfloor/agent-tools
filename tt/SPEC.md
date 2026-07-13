@@ -30,7 +30,13 @@ humans, not the use case.
 - `tt <any command...>` — condense that command instead.
 - Child's exit code is always propagated. TTY = passthrough + cache;
   piped = condensed TOON (`--tt-json` for JSON, `--tt-raw` to disable).
-- `--tt-last` re-condenses the cached run; `--tt-full` prints it raw.
+- `--tt-last` replays the stored verdict; `--tt-fail=<n>` prints one
+  failure's complete uncapped block from the cache; `--tt-full` prints the
+  whole cached log.
+- When the default `npm test` script matches vitest/jest, tt appends their
+  native JSON-report flags (side file; human log preserved) and builds an
+  exact verdict, falling back to heuristics on any parse failure. Explicit
+  user commands are never rewritten.
 - `--tt-max=<n>` caps failure rows (default 40; a note reports overflow).
 - stderr footer reports the token reduction (chars/4 estimate, like ght).
 

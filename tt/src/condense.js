@@ -16,7 +16,7 @@ const MARKERS = [
 // Lines that clearly end a failure block (start of passing noise).
 const NOISE = [/^\s*✔/, /^\s*✓/, /^ok /, /^PASS[ :]/, /^\s*ℹ /]
 
-export function extractFailures(text, { maxBlocks = 40, maxLines = 8 } = {}) {
+function collectBlocks(text, maxLines) {
   const lines = stripAnsi(text).split('\n')
   const blocks = []
   let cur = null
@@ -29,7 +29,7 @@ export function extractFailures(text, { maxBlocks = 40, maxLines = 8 } = {}) {
   for (const line of lines) {
     if (MARKERS.some((m) => m.test(line))) {
       flush()
-      cur = { head: line.trim(), detail: [] }
+      cur = { head: line.trim(), lines: [] }
       continue
     }
     if (!cur) continue
@@ -43,18 +43,29 @@ export function extractFailures(text, { maxBlocks = 40, maxLines = 8 } = {}) {
       continue
     }
     blanks = 0
-    if (cur.detail.length < maxLines) cur.detail.push(line.trim())
+    if (cur.lines.length < maxLines) cur.lines.push(line.trimEnd())
   }
   flush()
+  return blocks
+}
+
+export function extractFailures(text, { maxBlocks = 40, maxLines = 8 } = {}) {
+  const blocks = collectBlocks(text, maxLines)
   const truncated = Math.max(0, blocks.length - maxBlocks)
   return {
     truncated,
     failures: blocks.slice(0, maxBlocks).map((b, i) => ({
       n: i + 1,
       head: b.head,
-      detail: b.detail.join(' | ').slice(0, 500),
+      detail: b.lines.map((l) => l.trim()).join(' | ').slice(0, 500),
     })),
   }
+}
+
+// Failure #n's complete block (uncapped detail) — the --tt-fail drill-down.
+export function fullFailure(text, n) {
+  const block = collectBlocks(text, 400)[n - 1]
+  return block ? [block.head, ...block.lines].join('\n') : null
 }
 
 // Per-runner total parsers; null when no known summary format is present.
