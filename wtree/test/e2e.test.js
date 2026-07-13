@@ -49,9 +49,8 @@ test('new creates a worktree, prints only its path on stdout, and is idempotent'
   const r = wt(['new', 'feat/x'], repo)
   assert.equal(r.status, 0)
   const path = r.stdout.trim()
-  // realpath both sides: on macOS mkdtemp returns /var/... but git resolves
-  // the /private/var symlink
-  assert.equal(path.endsWith(join('proj.worktrees', 'feat-x')), true)
+  // wtree emits forward-slash paths on every OS (git style); compare literally.
+  assert.equal(path.endsWith('proj.worktrees/feat-x'), true)
   assert.equal(existsSync(join(path, 'a.txt')), true)
   assert.match(r.stderr, /worktree ready/)
 

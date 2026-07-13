@@ -8,7 +8,9 @@ export function git(args, opts = {}) {
     err.exitCode = r.status
     throw err
   }
-  return r.stdout
+  // Normalize CRLF → LF: git plumbing can emit \r on Windows, which would
+  // otherwise leave a trailing \r on parsed branch names, paths, and subjects.
+  return (r.stdout ?? '').replace(/\r\n/g, '\n')
 }
 
 export function tryGit(args, opts) {

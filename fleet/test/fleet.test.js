@@ -57,7 +57,7 @@ test('discoverRepos finds repos, skips satellites and non-repos', () => {
 test('repo rows: counts, activity, sorting (active first), TOON when piped', () => {
   const root = makeRoot()
   const r = fleet([], root)
-  assert.equal(r.status, 0)
+  assert.equal(r.status, 0, r.stderr)
   const rows = decode(r.stdout)
   assert.equal(rows.length, 2)
   assert.equal(rows[0].repo, 'alpha') // active sorts first
@@ -86,7 +86,7 @@ test('--json and positional roots work; empty root exits 1', () => {
   })
   assert.equal(JSON.parse(viaArg.stdout).length, 2)
   const empty = fleet([], mkdtempSync(join(tmpdir(), 'fleet-empty-')))
-  assert.equal(empty.status, 1)
+  assert.equal(empty.status, 1, empty.stderr)
   assert.match(empty.stderr, /no git repositories found/)
 })
 
@@ -97,7 +97,7 @@ test('with no roots and no FLEET_ROOTS, scans the current directory', () => {
     encoding: 'utf8',
     env: { ...process.env, FLEET_WT: WT_BIN, WTREE_NO_PROC: '1', WTREE_GH: '/nonexistent/gh', FLEET_ROOTS: '' },
   })
-  assert.equal(r.status, 0)
+  assert.equal(r.status, 0, r.stderr)
   assert.equal(JSON.parse(r.stdout).length, 2) // alpha + beta under cwd
 })
 
@@ -107,7 +107,7 @@ test('git-only fallback when wt is unavailable', () => {
     encoding: 'utf8',
     env: { ...process.env, FLEET_ROOTS: root, FLEET_WT: '/nonexistent/wtree' },
   })
-  assert.equal(r.status, 0)
+  assert.equal(r.status, 0, r.stderr)
   const rows = decode(r.stdout)
   assert.equal(rows.length, 2)
   assert.equal(rows.every((x) => x.worktrees === 1), true) // fallback sees main only

@@ -13,7 +13,9 @@ function makeProject() {
   const dir = mkdtempSync(join(tmpdir(), 'tt-e2e-'))
   const proj = join(dir, 'proj')
   mkdirSync(join(proj, 'test'), { recursive: true })
-  writeFileSync(join(proj, 'package.json'), JSON.stringify({ name: 'p', type: 'module', scripts: { test: 'node --test test/*.test.js' } }))
+  // Pin the TAP reporter so the format is identical across Node versions
+  // (Node's default flips between spec and TAP by version / TTY).
+  writeFileSync(join(proj, 'package.json'), JSON.stringify({ name: 'p', type: 'module', scripts: { test: 'node --test --test-reporter=tap test/*.test.js' } }))
   writeFileSync(join(proj, 'test', 'm.test.js'), `import test from 'node:test'
 import assert from 'node:assert/strict'
 test('passes', () => assert.equal(1, 1))
@@ -32,7 +34,7 @@ function tt(args, cwd, cache) {
 
 test('piped tt condenses a failing run to TOON and keeps the exit code', () => {
   const { proj, cache } = makeProject()
-  const r = tt(['node', '--test', 'test/m.test.js'], proj, cache)
+  const r = tt(['node', '--test', '--test-reporter=tap', 'test/m.test.js'], proj, cache)
   assert.notEqual(r.status, 0)
   const report = decode(r.stdout)
   assert.equal(report.summary.failed, 1)
@@ -44,7 +46,7 @@ test('piped tt condenses a failing run to TOON and keeps the exit code', () => {
 
 test('--tt-last re-condenses from cache; --tt-full returns raw output', () => {
   const { proj, cache } = makeProject()
-  tt(['node', '--test', 'test/m.test.js'], proj, cache)
+  tt(['node', '--test', '--test-reporter=tap', 'test/m.test.js'], proj, cache)
   const last = tt(['--tt-last'], proj, cache)
   assert.equal(last.status, 0)
   assert.equal(decode(last.stdout).summary.failed, 1)
@@ -54,10 +56,10 @@ test('--tt-last re-condenses from cache; --tt-full returns raw output', () => {
 
 test('--tt-fail prints the complete cached block for one failure', () => {
   const { proj, cache } = makeProject()
-  tt(['node', '--test', 'test/m.test.js'], proj, cache)
+  tt(['node', '--test', '--test-reporter=tap', 'test/m.test.js'], proj, cache)
   const r = tt(['--tt-fail=1'], proj, cache)
   assert.equal(r.status, 0)
-  assert.match(r.stdout, /✖ fails hard/)
+  assert.match(r.stdout, /fails hard/)
   assert.match(r.stdout, /AssertionError/)
   assert.doesNotMatch(r.stdout, / \| /) // real lines, not the condensed join
   const missing = tt(['--tt-fail=7'], proj, cache)

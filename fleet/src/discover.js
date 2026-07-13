@@ -28,7 +28,8 @@ export function discoverRepos(roots) {
 export function mainRootOf(dir) {
   const r = spawnSync('git', ['-C', dir, 'worktree', 'list', '--porcelain'], { encoding: 'utf8', timeout: 10000 })
   if (r.status !== 0 || !r.stdout) return null
-  const m = r.stdout.match(/^worktree (.+)$/m)
+  // Normalize CRLF so the captured path has no trailing \r on Windows.
+  const m = r.stdout.replace(/\r\n/g, '\n').match(/^worktree (.+)$/m)
   return m ? m[1] : null
 }
 

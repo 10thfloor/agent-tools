@@ -43,6 +43,26 @@ test('node:test output: failure block and counts', () => {
   assert.deepEqual(extractSummary(NODE_OUT), { runner: 'node:test', failed: 1, passed: 2 })
 })
 
+test('node:test TAP output (piped default): not-ok block and # counts', () => {
+  const tap = `TAP version 13
+ok 1 - passes
+not ok 2 - subtracts numbers
+  ---
+  error: 'Expected values to be strictly equal:'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  ...
+1..2
+# tests 2
+# pass 1
+# fail 1
+`
+  const { failures } = extractFailures(tap)
+  assert.equal(failures.length, 1)
+  assert.match(failures[0].head, /subtracts numbers/)
+  assert.deepEqual(extractSummary(tap), { runner: 'node:test', failed: 1, passed: 1 })
+})
+
 test('vitest output: failure block and counts', () => {
   const { failures } = extractFailures(VITEST_OUT)
   assert.equal(failures.length, 1)

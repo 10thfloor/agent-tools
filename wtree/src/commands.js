@@ -55,7 +55,10 @@ export function cmdNew(cwd, branch, flags, env = process.env) {
     out(existing.path)
     return 0
   }
-  const dest = join(worktreesDir(items[0].path), slug(branch))
+  // Forward slashes throughout: git reports worktree paths with '/' (even on
+  // Windows), so normalizing here keeps `wtree new` output identical to what
+  // `wtree list`/`path` show, and the path still works with cd / git / fs.
+  const dest = join(worktreesDir(items[0].path), slug(branch)).replace(/\\/g, '/')
   mkdirSync(dirname(dest), { recursive: true })
   let how
   if (tryGit(['show-ref', '--verify', '--quiet', `refs/heads/${branch}`], { cwd }) !== null) {

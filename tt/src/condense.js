@@ -71,10 +71,18 @@ export function fullFailure(text, n) {
 // Per-runner total parsers; null when no known summary format is present.
 export function extractSummary(text) {
   const t = stripAnsi(text)
+  // node:test spec reporter (`ℹ pass N`) — the TTY default.
   const nodeFail = t.match(/^ℹ fail (\d+)$/m)
   const nodePass = t.match(/^ℹ pass (\d+)$/m)
   if (nodeFail || nodePass) {
     return { runner: 'node:test', failed: Number(nodeFail?.[1] ?? 0), passed: Number(nodePass?.[1] ?? 0) }
+  }
+  // node:test TAP reporter (`# pass N`) — the default when piped, so the
+  // common case for an agent capturing output.
+  const tapFail = t.match(/^# fail (\d+)$/m)
+  const tapPass = t.match(/^# pass (\d+)$/m)
+  if (tapFail || tapPass) {
+    return { runner: 'node:test', failed: Number(tapFail?.[1] ?? 0), passed: Number(tapPass?.[1] ?? 0) }
   }
   const vit = t.match(/Tests[: ]+\s*(?:(\d+) failed[ ,|]+)?(?:(\d+) skipped[ ,|]+)?(\d+) passed/)
   if (vit) return { runner: 'vitest/jest', failed: Number(vit[1] ?? 0), passed: Number(vit[3]) }
