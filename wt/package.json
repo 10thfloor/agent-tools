@@ -1,0 +1,18 @@
+{
+  "name": "wt-cli",
+  "version": "0.1.0",
+  "description": "Developer-friendly git worktree manager — one-command create/remove, activity-aware listing, TOON output for agents",
+  "type": "module",
+  "bin": {
+    "wt": "bin/wt.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "@toon-format/toon": "^2.3.0"
+  }
+}

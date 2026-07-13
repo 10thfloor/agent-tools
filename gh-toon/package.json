@@ -1,0 +1,28 @@
+{
+  "name": "gh-toon",
+  "version": "0.1.0",
+  "description": "Token-efficient GitHub CLI wrapper for coding agents — converts gh JSON output to TOON",
+  "type": "module",
+  "bin": {
+    "ght": "bin/ght.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "bench": "node bench/run.mjs",
+    "bench:offline": "node bench/run.mjs --offline"
+  },
+  "dependencies": {
+    "@toon-format/toon": "^2.3.0"
+  },
+  "devDependencies": {
+    "gpt-tokenizer": "^3.4.0"
+  }
+}

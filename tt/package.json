@@ -1,0 +1,18 @@
+{
+  "name": "tt-cli",
+  "version": "0.1.0",
+  "description": "Test-output condenser for coding agents — failures only, TOON when piped",
+  "type": "module",
+  "bin": {
+    "tt": "bin/tt.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "@toon-format/toon": "^2.3.0"
+  }
+}

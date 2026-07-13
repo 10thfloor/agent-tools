@@ -1,0 +1,19 @@
+{
+  "name": "tok-cli",
+  "version": "0.1.0",
+  "description": "Token counter and budget linter for agent-facing text — real tokenizer counts for files, commands, stdin",
+  "type": "module",
+  "bin": {
+    "tok": "bin/tok.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "@toon-format/toon": "^2.3.0",
+    "gpt-tokenizer": "^3.4.0"
+  }
+}
