@@ -36,3 +36,14 @@ cd <tool> && npm install && npm link
 
 Node >= 22. Each tool's README has flags, env vars, and agent-integration
 snippets for `CLAUDE.md`/`AGENTS.md`.
+
+## Agent skill
+
+[skills/using-agent-tools](skills/using-agent-tools/SKILL.md) teaches Claude
+Code agents to reach for the suite instead of raw `gh` / test runners /
+`git worktree` / JSON CLIs (verified: baseline agents use raw commands,
+skill-loaded agents switch). Install for all sessions:
+
+```sh
+ln -sfn "$(pwd)/skills/using-agent-tools" ~/.claude/skills/using-agent-tools
+```
