@@ -1,7 +1,7 @@
 {
   "name": "tt-cli",
   "version": "0.1.0",
-  "description": "Test-output condenser for coding agents — failures only, TOON when piped",
+  "description": "Runs test suites and returns an agent-readable verdict — summary, per-failure rows, exit code; TOON when piped",
   "type": "module",
   "bin": {
     "tt": "bin/tt.js"

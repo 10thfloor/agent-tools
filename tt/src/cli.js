@@ -6,11 +6,12 @@ import { encode } from '@toon-format/toon'
 import { condense } from './condense.js'
 import { defaultCommand, run } from './runner.js'
 
-export const USAGE = `tt — test-output condenser for coding agents
+export const USAGE = `tt — run the tests, get an agent-readable verdict
 
 Usage:
   tt                      run the project's test command (npm test / pytest /
-                          cargo test / go test), condensed when piped
+                          cargo test / go test); piped output is the verdict:
+                          summary + one row per failure + exit code
   tt <command...>         condense any command's output instead
   tt --tt-last            re-condense the previous run (no re-run)
   tt --tt-full            print the previous run's full output

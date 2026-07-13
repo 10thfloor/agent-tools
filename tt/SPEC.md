@@ -1,13 +1,16 @@
-# Spec: tt — test-output condenser for coding agents
+# Spec: tt — run tests, return an agent-readable verdict
 
 ## Objective
 
-Test output is the most re-read text in any agent loop, and almost all of it
-is passing noise. `tt` wraps the project's test command: on a TTY it streams
-output through unchanged (humans keep their runner UX); when piped (the
-agent case) it emits only what matters — a summary line and one structured
-row per failure — as TOON. Full output is always cached, so `tt --tt-full`
-retrieves it and `tt --tt-last` re-condenses without re-running.
+Test output is the most re-read text in any agent loop, and almost all of
+it is passing noise. `tt` runs the project's test command and returns the
+verdict an agent needs to decide its next move: exit code (unchanged),
+summary counts, and one structured row per failure (name, file:line,
+assertion) as TOON. tt never evaluates anything itself — the agent judges;
+tt makes judging cheap and truncation-proof. Full output is always cached:
+`tt --tt-full` retrieves it, `tt --tt-last` re-reads the verdict without
+re-running. On a TTY it streams through unchanged — a safety behavior for
+humans, not the use case.
 
 ### Assumptions (autonomous session)
 

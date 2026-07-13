@@ -7,7 +7,7 @@ self-contained (own `package.json`, own tests); this repo is the suite.
 |---|---|---|
 | [ght](ght/) | `ght` | `gh` wrapper that re-emits JSON as TOON after pruning GitHub API noise — benchmarked **62% token reduction** ([benchmark](ght/BENCHMARK.md)) |
 | [wt](wt/) | `wt` | friendly git worktrees, per project: one-command create/remove, activity-aware list (dirty / PR / agent-detected), notes + generated work summaries |
-| [tt](tt/) | `tt` | test-output condenser: failures only when piped, full stream on a TTY, cached (`--tt-last`, `--tt-full`) |
+| [tt](tt/) | `tt` | runs the test suite, returns an agent-readable verdict: summary + one row per failure (file:line, assertion) + exit code, cached for re-query |
 | [tj](tj/) | `tj` | TOON-ify **any** JSON-speaking CLI with per-CLI prune profiles (gh, kubectl/oc, aws, generic) |
 | [fleet](fleet/) | `fleet` | cross-project overview: every repo's worktrees, PRs, work summaries, and live agents in one table (powered by `wt` per repo) |
 | [tok](tok/) | `tok` | token counter + budget linter for agent-facing text — real tokenizer counts for files, command output, stdin; `--max` gates exit codes |
@@ -52,8 +52,10 @@ gap grows with rows; the real win is the activity intelligence.
 
 ### tt
 
+Runs the suite, returns the verdict; the agent decides what's next.
+
 ```
-$ tt              # wraps npm test / pytest / cargo test / go test
+$ tt              # runs npm test / pytest / cargo test / go test
 summary:
   command: npm test --silent
   exit: 1
@@ -63,9 +65,11 @@ failures[1]{n,head,detail}:
   1,✖ rejects empty input (2.1ms),AssertionError … | at test/parse.test.js:14
 ```
 
-**Benchmark:** a 38-test suite run: 653 → **39 tokens** piped (**94%
-smaller**); long failing logs condense even harder. Nothing is lost —
-`tt --tt-full` replays the cached complete output.
+**Benchmark:** the verdict for a 38-test run costs **39 tokens** (raw
+output: 653 — **94% less**), and a failure can never be lost to output
+truncation — the verdict is small by construction. The cache makes second
+looks free: `tt --tt-last` re-reads, `tt --tt-full` replays the complete
+log, no re-run.
 
 ### tj
 
