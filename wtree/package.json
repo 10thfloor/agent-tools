@@ -1,7 +1,7 @@
 {
   "name": "wtree-cli",
   "version": "0.1.0",
-  "description": "Developer-friendly git worktree manager — one-command create/remove, activity-aware listing, TOON output for agents",
+  "description": "Developer-friendly git worktree manager: one-command create/remove, activity-aware listing, TOON output for agents",
   "type": "module",
   "bin": {
     "wtree": "bin/wtree.js"

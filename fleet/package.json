@@ -1,7 +1,7 @@
 {
   "name": "fleet-cli",
   "version": "0.1.0",
-  "description": "Cross-project overview of repos, worktrees, PRs, and live agents — one table for the whole fleet",
+  "description": "Cross-project overview of repos, worktrees, PRs, and live agents: one table for the whole fleet",
   "type": "module",
   "bin": {
     "fleet": "bin/fleet.js"

@@ -1,7 +1,7 @@
 {
   "name": "bench-cli",
   "version": "0.1.0",
-  "description": "Token A/B benchmarks on your own workloads — prove the suite's savings on your repos, gate them in CI",
+  "description": "Token A/B benchmarks on your own workloads: prove the suite's savings on your repos, gate them in CI",
   "type": "module",
   "bin": {
     "bench": "bin/bench.js"

@@ -1,7 +1,7 @@
 {
   "name": "tt-cli",
   "version": "0.1.0",
-  "description": "Fronts your test runner and manages what reaches agent context — verdict by default, full detail on demand, all from one cached run",
+  "description": "Fronts your test runner and manages what reaches agent context: verdict by default, full detail on demand, all from one cached run",
   "type": "module",
   "bin": {
     "tt": "bin/tt.js"

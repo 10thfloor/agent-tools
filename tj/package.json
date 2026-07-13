@@ -1,7 +1,7 @@
 {
   "name": "tj-cli",
   "version": "0.1.0",
-  "description": "TOON-ify any JSON-speaking CLI for coding agents — per-CLI prune profiles, gh/kubectl/aws aware",
+  "description": "TOON-ify any JSON-speaking CLI for coding agents: per-CLI prune profiles, gh/kubectl/aws aware",
   "type": "module",
   "bin": {
     "tj": "bin/tj.js"

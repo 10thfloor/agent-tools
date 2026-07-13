@@ -10,7 +10,7 @@ import { discoverRepos } from '../src/discover.js'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const BIN = join(HERE, '..', 'bin', 'fleet.js')
-// The real sibling wtree — this doubles as a suite integration test.
+// The real sibling wtree; this doubles as a suite integration test.
 const WT_BIN = join(HERE, '..', '..', 'wtree', 'bin', 'wtree.js')
 
 const sh = (cmd, args, cwd) => execFileSync(cmd, args, { cwd, encoding: 'utf8' })
@@ -104,7 +104,7 @@ test('with no roots and no FLEET_ROOTS, scans the current directory', () => {
 test('FLEET_ROOTS accepts multiple roots via the platform delimiter', () => {
   // Two independent roots joined by path.delimiter (':' on POSIX, ';' on
   // Windows). Windows drive letters contain ':', so a hardcoded ':' split
-  // would shred them — this guards that regression.
+  // would shred them; this guards that regression.
   const rootA = makeRoot()
   const rootB = makeRoot()
   const r = spawnSync(process.execPath, [BIN, '--json'], {

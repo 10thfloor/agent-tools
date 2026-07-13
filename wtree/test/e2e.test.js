@@ -35,7 +35,7 @@ function wt(args, cwd, env = {}) {
 }
 
 // Cross-platform fake `gh`: a .mjs the tool runs via node (prepSpawn handles
-// running a .mjs on every OS — no shebang / chmod / /bin/sh). `body` is JS
+// running a .mjs on every OS: no shebang / chmod / /bin/sh). `body` is JS
 // with `args` (process.argv.slice(2)) and `out()`.
 function fakeGh(body) {
   const dir = mkdtempSync(join(tmpdir(), 'wt-gh-'))
