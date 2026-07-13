@@ -24,8 +24,11 @@ export const toJson = (rows) => JSON.stringify(rows)
 
 export function toTable(rows, { color = process.stdout.isTTY } = {}) {
   const c = (code, s) => (color ? `\x1b[${code}m${s}\x1b[0m` : s)
-  const home = homedir()
-  const tilde = (p) => (p.startsWith(home) ? '~' + p.slice(home.length) : p)
+  const home = homedir().replace(/\\/g, '/')
+  const tilde = (p) => {
+    const q = p.replace(/\\/g, '/')
+    return q === home || q.startsWith(home + '/') ? '~' + q.slice(home.length) : p
+  }
   const trunc = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s)
   const cells = rows.map((r) => ({
     active: r.status === 'active',

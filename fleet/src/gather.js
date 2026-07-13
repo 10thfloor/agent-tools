@@ -24,8 +24,8 @@ async function wtRows(main, env) {
 
 // git-only fallback when wt is unavailable in this environment.
 function gitRow(main) {
-  const branch = spawnSync('git', ['-C', main, 'branch', '--show-current'], { encoding: 'utf8' }).stdout?.trim() || '(detached)'
-  const porcelain = spawnSync('git', ['-C', main, 'status', '--porcelain'], { encoding: 'utf8' }).stdout ?? ''
+  const branch = spawnSync('git', ['-C', main, 'branch', '--show-current'], { encoding: 'utf8', timeout: 10000 }).stdout?.trim() || '(detached)'
+  const porcelain = spawnSync('git', ['-C', main, 'status', '--porcelain'], { encoding: 'utf8', timeout: 10000 }).stdout ?? ''
   const dirty = porcelain.split('\n').filter(Boolean).length
   return { branch, status: dirty > 0 ? 'active' : 'idle', activity: dirty ? `dirty:${dirty}` : '', work: '', dirty, pr: '', main: true, path: main }
 }

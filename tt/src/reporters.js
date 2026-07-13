@@ -9,6 +9,10 @@ export function reporterKind(cwd) {
   try {
     const pkg = JSON.parse(readFileSync(join(cwd, 'package.json'), 'utf8'))
     const script = pkg.scripts?.test ?? ''
+    // npm appends our reporter flags to the END of the whole script line, so
+    // they'd land on the wrong command in a compound script (`vitest && tsc`).
+    // Bail to heuristics unless the runner is the single, last command.
+    if (/[&|;]/.test(script)) return null
     if (/\bvitest\b/.test(script)) return 'vitest'
     if (/\bjest\b/.test(script)) return 'jest'
   } catch {

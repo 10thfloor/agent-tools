@@ -37,7 +37,10 @@ export function parseArgs(argv) {
     else if (a === '--toon') flags.toon = true
     else if (a === '--table') flags.table = true
     else if (a === '--help' || a === '-h') flags.help = true
-    else if (a === '--max') flags.max = argv[++i]
+    else if (a === '--max') {
+      if (i + 1 >= argv.length) throw new Error('tok: --max needs a value (e.g. 5k)')
+      flags.max = argv[++i]
+    }
     else if (a.startsWith('--max=')) flags.max = a.slice('--max='.length)
     else if (a.startsWith('--enc=')) flags.enc = a.slice('--enc='.length)
     else if (a.startsWith('-') && a !== '-') throw new Error(`tok: unknown flag ${a}`)

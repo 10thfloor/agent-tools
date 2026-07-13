@@ -115,6 +115,17 @@ test('FLEET_ROOTS accepts multiple roots via the platform delimiter', () => {
   assert.equal(JSON.parse(r.stdout).length, 4) // alpha+beta from each root
 })
 
+test('--table renders without crashing (default interactive format)', () => {
+  const root = makeRoot()
+  const r = spawnSync(process.execPath, [BIN, '--table'], {
+    encoding: 'utf8',
+    env: { ...process.env, FLEET_ROOTS: root, FLEET_WT: WT_BIN, WTREE_NO_PROC: '1', WTREE_GH: '/nonexistent/gh' },
+  })
+  assert.equal(r.status, 0, r.stderr)
+  assert.match(r.stdout, /REPO\s+WORK/)
+  assert.match(r.stdout, /alpha/)
+})
+
 test('git-only fallback when wt is unavailable', () => {
   const root = makeRoot()
   const r = spawnSync(process.execPath, [BIN], {

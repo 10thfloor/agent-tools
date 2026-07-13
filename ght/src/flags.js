@@ -38,7 +38,7 @@ export function parseArgs(argv, env = process.env) {
     else if (arg.startsWith('--ght-')) throw new UsageError(`ght: unknown flag ${arg}`)
     else gh.push(arg)
   }
-  if (!(opts.delimiter in DELIMITERS)) {
+  if (!(Object.hasOwn(DELIMITERS, opts.delimiter))) {
     throw new UsageError(`ght: invalid delimiter "${opts.delimiter}" (tab, comma, pipe)`)
   }
   return { opts, gh }

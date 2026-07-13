@@ -48,13 +48,15 @@ export function cmdNew(cwd, branch, flags, env = process.env) {
     branch = nextGenericBranch(cwd)
     log(`• no branch name given — using '${branch}' (add intent with -m "...")`)
   }
-  const existing = items.find((w) => w.branch === branch)
+  const existing = items.find((w) => w.branch === branch && !w.prunable)
   if (existing) {
     if (flags.note) setNote(cwd, branch, flags.note)
     log(`✓ worktree for '${branch}' already exists — reusing${flags.note ? ' (note updated)' : ''}`)
     out(existing.path)
     return 0
   }
+  // A stale (prunable) worktree still holding this branch would block the add.
+  if (items.some((w) => w.branch === branch && w.prunable)) tryGit(['worktree', 'prune'], { cwd })
   // Forward slashes throughout: git reports worktree paths with '/' (even on
   // Windows), so normalizing here keeps `wtree new` output identical to what
   // `wtree list`/`path` show, and the path still works with cd / git / fs.
@@ -142,17 +144,20 @@ export function cmdRm(cwd, ref, flags) {
     log('wtree: refusing to remove the main worktree')
     return 1
   }
-  return removeOne(cwd, wt, flags)
+  return removeOne(items[0].path, wt, flags)
 }
 
-function removeOne(cwd, wt, flags) {
+// `main` is the main worktree path — git runs there, not in the worktree being
+// removed (which may be the caller's cwd and about to vanish).
+function removeOne(main, wt, flags) {
+  const cwd = main
   if (wt.prunable) {
     git(['worktree', 'prune'], { cwd })
     log(`✓ pruned stale worktree ${wt.path}`)
   } else {
-    const work = workStatus(wt)
-    if (work.dirty > 0 && !flags.force) {
-      log(`wtree: '${wt.branch ?? wt.path}' has ${work.dirty} uncommitted change(s) — commit first, or wtree rm --force`)
+    const dirty = (tryGit(['-C', wt.path, 'status', '--porcelain']) ?? '').split('\n').filter(Boolean).length
+    if (dirty > 0 && !flags.force) {
+      log(`wtree: '${wt.branch ?? wt.path}' has ${dirty} uncommitted change(s) — commit first, or wtree rm --force`)
       return 1
     }
     git(['worktree', 'remove', ...(flags.force ? ['--force'] : []), wt.path], { cwd })
@@ -171,7 +176,9 @@ function removeOne(cwd, wt, flags) {
 }
 
 export function cmdClean(cwd, flags, env = process.env) {
-  const candidates = gatherEntries(cwd, env).filter((e) => !e.wt.isMain && !e.activity.active)
+  const entries = gatherEntries(cwd, env)
+  const mainPath = entries.find((e) => e.wt.isMain)?.wt.path ?? cwd
+  const candidates = entries.filter((e) => !e.wt.isMain && !e.activity.active)
   if (!candidates.length) {
     log('✓ nothing to clean — every worktree is active (or main)')
     return 0
@@ -182,7 +189,7 @@ export function cmdClean(cwd, flags, env = process.env) {
     return 0
   }
   let code = 0
-  for (const e of candidates) code = removeOne(cwd, e.wt, {}) || code
+  for (const e of candidates) code = removeOne(mainPath, e.wt, {}) || code
   return code
 }
 

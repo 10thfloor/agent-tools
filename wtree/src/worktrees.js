@@ -16,13 +16,12 @@ export function parseWorktreeList(text) {
     const key = sp === -1 ? line : line.slice(0, sp)
     const val = sp === -1 ? '' : line.slice(sp + 1)
     if (key === 'worktree') {
-      cur = { path: val, head: null, branch: null, detached: false, bare: false, locked: false, prunable: false, isMain: false }
+      cur = { path: val, head: null, branch: null, detached: false, locked: false, prunable: false, isMain: false }
     } else if (!cur) {
       continue
     } else if (key === 'HEAD') cur.head = val
     else if (key === 'branch') cur.branch = val.replace(/^refs\/heads\//, '')
     else if (key === 'detached') cur.detached = true
-    else if (key === 'bare') cur.bare = true
     else if (key === 'locked') cur.locked = true
     else if (key === 'prunable') cur.prunable = true
   }
@@ -44,12 +43,13 @@ export function slug(branch) {
   return branch.replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '')
 }
 
-// Accept a branch name, a full path, or a path basename.
+// Accept a branch name, a full path (separator/case-tolerant), or a path
+// basename — so `rm`/`path`/`note` by native Windows path also resolve.
 export function findWorktree(items, ref) {
   return (
     items.find((w) => w.branch === ref)
-    || items.find((w) => w.path === ref)
-    || items.find((w) => basename(w.path) === ref)
+    || items.find((w) => samePathBase(w.path) === samePathBase(ref))
+    || items.find((w) => basename(w.path) === basename(ref))
   )
 }
 

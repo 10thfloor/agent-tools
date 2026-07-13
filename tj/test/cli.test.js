@@ -74,6 +74,12 @@ test('--tj-raw and --tj-json modes', () => {
   assert.equal(j.stdout.trim(), '{}')
 })
 
+test('prototype-key flag values are rejected (not silently accepted via `in`)', () => {
+  const gh = fakeCli('gh', `out('{"a":1}\\n')`)
+  assert.equal(tj([gh, '--tj-profile=constructor']).status, 2)
+  assert.equal(tj([gh, '--tj-delimiter=toString']).status, 2)
+})
+
 test('TJ_STATS=0 suppresses the footer; usage errors exit 2', () => {
   const gh = fakeCli('gh', `out('{"a":1}\\n')`)
   assert.equal(tj([gh], { TJ_STATS: '0' }).stderr, '')

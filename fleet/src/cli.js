@@ -1,3 +1,4 @@
+import { homedir } from 'node:os'
 import { delimiter } from 'node:path'
 import { encode } from '@toon-format/toon'
 import { gatherFleet } from './gather.js'
@@ -63,7 +64,11 @@ export async function runFleet(argv, env = process.env) {
   return 0
 }
 
-const tilde = (p) => (p.startsWith(homedir()) ? '~' + p.slice(homedir().length) : p)
+const tilde = (p) => {
+  const h = homedir().replace(/\\/g, '/')
+  const q = p.replace(/\\/g, '/')
+  return q === h || q.startsWith(h + '/') ? '~' + q.slice(h.length) : p
+}
 const trunc = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s)
 const color = () => process.stdout.isTTY === true
 

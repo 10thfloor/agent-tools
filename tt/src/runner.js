@@ -28,6 +28,10 @@ export function run(cmd, { echo }) {
     delete env.NODE_TEST_CONTEXT
     const [c, a, o] = prepSpawn(cmd[0], cmd.slice(1), { stdio: ['inherit', 'pipe', 'pipe'], env })
     const child = spawn(c, a, o)
+    // Decode as UTF-8 across chunk boundaries: the failure markers (✖ ✓ ×) are
+    // multibyte and would corrupt if a 3-byte glyph split across two chunks.
+    child.stdout.setEncoding('utf8')
+    child.stderr.setEncoding('utf8')
     let text = ''
     child.stdout.on('data', (d) => {
       text += d

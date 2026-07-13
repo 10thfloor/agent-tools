@@ -36,8 +36,10 @@ export function parseArgs(argv) {
     else if (a === '--tt-last') flags.last = true
     else if (a === '--tt-full') flags.full = true
     else if (a === '--tt-help') flags.help = true
-    else if (a.startsWith('--tt-max=')) flags.max = Number(a.slice('--tt-max='.length)) || 40
-    else if (a.startsWith('--tt-fail=')) {
+    else if (a.startsWith('--tt-max=')) {
+      flags.max = Number(a.slice('--tt-max='.length))
+      if (!Number.isInteger(flags.max) || flags.max < 1) throw new Error('tt: --tt-max needs a positive integer')
+    } else if (a.startsWith('--tt-fail=')) {
       flags.fail = Number(a.slice('--tt-fail='.length))
       if (!Number.isInteger(flags.fail) || flags.fail < 1) throw new Error('tt: --tt-fail needs a positive integer')
     } else if (a.startsWith('--tt-')) throw new Error(`tt: unknown flag ${a}`)
@@ -136,6 +138,7 @@ export async function runTt(argv, env = process.env) {
   const tty = process.stdout.isTTY === true
   const { text, code } = await run(fullCmd, { echo: tty || flags.raw })
   const rep = kind ? parseReport(cache.report) : null
+  rmSync(cache.report, { force: true }) // don't leave the side-file behind
   const verdict = rep
     ? reportVerdict(rep, code, command, kind, flags.max)
     : condense(text, code, command.join(' '), { maxBlocks: flags.max })

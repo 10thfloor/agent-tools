@@ -19,9 +19,9 @@ export function prepSpawn(cmd, args = [], opts = {}) {
 }
 
 function isBatchShim(cmd) {
-  if (cmd.includes('/') || cmd.includes('\\')) return /\.(cmd|bat)$/i.test(cmd)
-  const ext = extname(cmd)
-  if (ext) return /\.(cmd|bat)$/i.test(ext)
+  // An explicit path or an extension decides from the name alone.
+  if (cmd.includes('/') || cmd.includes('\\') || extname(cmd)) return /\.(cmd|bat)$/i.test(cmd)
+  // Bare name: resolve against PATH × PATHEXT; a .cmd/.bat hit needs a shell.
   const dirs = (process.env.PATH || '').split(delimiter).filter(Boolean)
   const exts = (process.env.PATHEXT || '.COM;.EXE;.BAT;.CMD').split(';').map((e) => e.trim()).filter(Boolean)
   for (const dir of dirs) {
@@ -33,7 +33,9 @@ function isBatchShim(cmd) {
 }
 
 // Node passes shell:true args to cmd.exe unquoted; protect spaces and cmd
-// metacharacters. cmd escapes an embedded double-quote by doubling it.
+// metacharacters. cmd escapes an embedded double-quote by doubling it. Note:
+// %VAR% / !VAR! expansion cannot be fully suppressed on a cmd line even when
+// quoted — an unavoidable cmd limitation for args reaching a .cmd/.bat shim.
 function winQuote(a) {
   if (a === '') return '""'
   if (!/[\s"&|<>^()%!]/.test(a)) return a

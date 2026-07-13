@@ -2,15 +2,16 @@ const ANSI = /\x1b\[[0-9;]*m/g
 
 export const stripAnsi = (s) => s.replace(ANSI, '')
 
-// Lines that open a failure block across common runners.
+// Lines that open a failure block, one per failing test. Deliberately NOT
+// per-file badge lines (`FAIL <file>` in jest, `FAILED <id>` short-summary in
+// pytest) — those duplicate the real per-test blocks and inflate the count.
 const MARKERS = [
-  /^\s*✖ /, // node:test
-  /^\s*✗ /, // vitest
+  /^\s*✖ /, // node:test spec
+  /^\s*[✗×] /, // vitest (✗ older, × v1+)
   /^\s*● /, // jest
   /^--- FAIL/, // go
-  /^FAILED[ :]/, // pytest short summary
-  /^FAIL[ :]/, // vitest/jest file line, cargo
   /^_{5,}.+_{5,}$/, // pytest section header
+  /^---- .+ ----$/, // cargo failure detail (---- tests::name stdout ----)
   /^not ok /, // TAP
 ]
 // Lines that clearly end a failure block (start of passing noise).
@@ -68,26 +69,31 @@ export function fullFailure(text, n) {
   return block ? [block.head, ...block.lines].join('\n') : null
 }
 
+const num = (s, re) => Number(s.match(re)?.[1] ?? 0)
+
 // Per-runner total parsers; null when no known summary format is present.
+// Each tolerates an all-failing run (a missing pass or fail count is 0).
 export function extractSummary(text) {
   const t = stripAnsi(text)
-  // node:test spec reporter (`ℹ pass N`) — the TTY default.
-  const nodeFail = t.match(/^ℹ fail (\d+)$/m)
-  const nodePass = t.match(/^ℹ pass (\d+)$/m)
+  // node:test — spec reporter (`ℹ pass N`, TTY default) and TAP reporter
+  // (`# pass N`, the piped default) share these counts.
+  const nodeFail = t.match(/^[ℹ#] fail (\d+)$/m)
+  const nodePass = t.match(/^[ℹ#] pass (\d+)$/m)
   if (nodeFail || nodePass) {
     return { runner: 'node:test', failed: Number(nodeFail?.[1] ?? 0), passed: Number(nodePass?.[1] ?? 0) }
   }
-  // node:test TAP reporter (`# pass N`) — the default when piped, so the
-  // common case for an agent capturing output.
-  const tapFail = t.match(/^# fail (\d+)$/m)
-  const tapPass = t.match(/^# pass (\d+)$/m)
-  if (tapFail || tapPass) {
-    return { runner: 'node:test', failed: Number(tapFail?.[1] ?? 0), passed: Number(tapPass?.[1] ?? 0) }
+  // vitest / jest: "Tests  N failed | M passed (T)" — either count may be
+  // absent on an all-passing or all-failing run.
+  const vitLine = t.match(/^\s*Tests:?\s+(.+)$/m)
+  if (vitLine && /\d+ (?:failed|passed)/.test(vitLine[1])) {
+    return { runner: 'vitest/jest', failed: num(vitLine[1], /(\d+) failed/), passed: num(vitLine[1], /(\d+) passed/) }
   }
-  const vit = t.match(/Tests[: ]+\s*(?:(\d+) failed[ ,|]+)?(?:(\d+) skipped[ ,|]+)?(\d+) passed/)
-  if (vit) return { runner: 'vitest/jest', failed: Number(vit[1] ?? 0), passed: Number(vit[3]) }
-  const py = t.match(/(?:(\d+) failed, )?(\d+) passed(?:,[^=]*)? in [\d.]+s/)
-  if (py) return { runner: 'pytest', failed: Number(py[1] ?? 0), passed: Number(py[2]) }
+  // cargo: "test result: FAILED. N passed; M failed; ..."
+  const cargo = t.match(/test result: \w+\. (\d+) passed; (\d+) failed/)
+  if (cargo) return { runner: 'cargo', failed: Number(cargo[2]), passed: Number(cargo[1]) }
+  // pytest: "== N failed, M passed in X.Xs ==" — either count optional.
+  const pyLine = t.split('\n').find((l) => / in [\d.]+s/.test(l) && /\d+ (?:passed|failed)/.test(l))
+  if (pyLine) return { runner: 'pytest', failed: num(pyLine, /(\d+) failed/), passed: num(pyLine, /(\d+) passed/) }
   return null
 }
 

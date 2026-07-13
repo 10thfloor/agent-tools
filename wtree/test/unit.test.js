@@ -86,6 +86,11 @@ test('parseArgv: --pr forms', () => {
   assert.deepEqual(parseArgv(['new', '--pr=1234']).flags, { pr: '1234' })
 })
 
+test('parseArgv: a value flag with no value is a usage error, not a dropped flag', () => {
+  assert.throws(() => parseArgv(['new', '--pr']), /requires a value/)
+  assert.throws(() => parseArgv(['new', 'x', '--from']), /requires a value/)
+})
+
 test('worktreeAt picks the deepest containing worktree', () => {
   const items = parseWorktreeList(PORCELAIN)
   const nested = { ...items[1], path: '/Users/x/proj/.claude/worktrees/inner' }

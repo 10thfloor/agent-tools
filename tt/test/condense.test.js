@@ -78,6 +78,55 @@ test('pytest output: section header block and counts', () => {
   assert.deepEqual(extractSummary(PYTEST_OUT), { runner: 'pytest', failed: 1, passed: 7 })
 })
 
+test('jest: per-file FAIL badge does not double-count the per-test block', () => {
+  const out = `FAIL src/math.test.js
+  ● subtract › handles negatives
+
+    expect(received).toBe(expected)
+
+Tests:       1 failed, 2 passed, 3 total`
+  const { failures } = extractFailures(out)
+  assert.equal(failures.length, 1) // the ● block only, not the FAIL badge
+  assert.match(failures[0].head, /handles negatives/)
+  assert.deepEqual(extractSummary(out), { runner: 'vitest/jest', failed: 1, passed: 2 })
+})
+
+test('pytest: short-summary FAILED line does not double-count the section block', () => {
+  const out = `____________________ test_refund ____________________
+E   assert 402 == 200
+tests/t.py:9: AssertionError
+=========================== short test summary ===========================
+FAILED tests/t.py::test_refund - assert 402 == 200
+=================== 1 failed, 3 passed in 0.10s ===================`
+  const { failures } = extractFailures(out)
+  assert.equal(failures.length, 1)
+  assert.deepEqual(extractSummary(out), { runner: 'pytest', failed: 1, passed: 3 })
+})
+
+test('cargo: result line and failure detail block are parsed', () => {
+  const out = `---- tests::refund stdout ----
+thread 'tests::refund' panicked at 'assertion failed'
+
+failures:
+    tests::refund
+
+test result: FAILED. 4 passed; 1 failed; 0 ignored`
+  const { failures } = extractFailures(out)
+  assert.match(failures[0].head, /tests::refund/)
+  assert.deepEqual(extractSummary(out), { runner: 'cargo', failed: 1, passed: 4 })
+})
+
+test('all-failing vitest/pytest summaries (zero passing) still parse', () => {
+  assert.deepEqual(extractSummary('Tests  3 failed (3)'), { runner: 'vitest/jest', failed: 3, passed: 0 })
+  assert.deepEqual(extractSummary('=== 2 failed in 0.3s ==='), { runner: 'pytest', failed: 2, passed: 0 })
+})
+
+test('vitest v1 × marker is recognized', () => {
+  const { failures } = extractFailures('  × src/a.test.ts > breaks\n    AssertionError\n')
+  assert.equal(failures.length, 1)
+  assert.match(failures[0].head, /breaks/)
+})
+
 test('go output: FAIL marker captured, unknown summary falls back to block count', () => {
   const out = `--- FAIL: TestRefund (0.03s)
     refund_test.go:22: got 402, want 200

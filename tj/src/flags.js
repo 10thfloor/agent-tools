@@ -46,8 +46,8 @@ export function parseArgs(argv, env = process.env) {
     else if (arg.startsWith('--tj-')) throw new UsageError(`tj: unknown flag ${arg}`)
     else cmd.push(arg)
   }
-  if (!(opts.delimiter in DELIMITERS)) throw new UsageError(`tj: invalid delimiter "${opts.delimiter}"`)
-  if (opts.profile && !(opts.profile in PROFILES)) {
+  if (!(Object.hasOwn(DELIMITERS, opts.delimiter))) throw new UsageError(`tj: invalid delimiter "${opts.delimiter}"`)
+  if (opts.profile && !(Object.hasOwn(PROFILES, opts.profile))) {
     throw new UsageError(`tj: unknown profile "${opts.profile}" (${Object.keys(PROFILES).join(', ')})`)
   }
   return { cmd, opts }

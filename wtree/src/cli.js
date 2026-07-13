@@ -46,7 +46,12 @@ export function parseArgv(argv) {
     const name = eq === -1 ? body : body.slice(0, eq)
     const short = !a.startsWith('--')
     if (VALUE_FLAGS[name] && (!short || body.length === 1)) {
-      flags[VALUE_FLAGS[name]] = eq === -1 ? (argv[++i] ?? '') : body.slice(eq + 1)
+      if (eq === -1) {
+        if (i + 1 >= argv.length) throw new UsageError(`flag ${a} requires a value`)
+        flags[VALUE_FLAGS[name]] = argv[++i]
+      } else {
+        flags[VALUE_FLAGS[name]] = body.slice(eq + 1)
+      }
     } else if (BOOL_FLAGS[name] && eq === -1 && (!short || body.length === 1)) {
       flags[BOOL_FLAGS[name]] = true
     } else {

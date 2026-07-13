@@ -94,12 +94,21 @@ export function prTitle(cwd, number, env = process.env) {
 // bun, python). Best-effort: lsof missing or slow → empty list.
 export function agentCwds(env = process.env) {
   if (env.WTREE_NO_PROC === '1') return []
-  const r = spawnSync('lsof', ['-a', '-d', 'cwd', '-c', 'claude', '-c', 'node', '-c', 'bun', '-c', 'python', '-F', 'n'], {
+  const r = spawnSync('lsof', ['-a', '-d', 'cwd', '-c', 'claude', '-c', 'node', '-c', 'bun', '-c', 'python', '-F', 'pn'], {
     encoding: 'utf8',
     timeout: 4000,
   })
   if (r.error || typeof r.stdout !== 'string') return []
-  return r.stdout.split('\n').filter((l) => l[0] === 'n').map((l) => l.slice(1))
+  // Exclude wtree's own process (and its launcher parent) so the worktree you
+  // run `wtree` from isn't always reported as having an agent.
+  const self = new Set([String(process.pid), String(process.ppid)])
+  const cwds = []
+  let pid = null
+  for (const line of r.stdout.split('\n')) {
+    if (line[0] === 'p') pid = line.slice(1)
+    else if (line[0] === 'n' && !self.has(pid)) cwds.push(line.slice(1))
+  }
+  return cwds
 }
 
 export function deriveActivity(wt, work, pr, cwds) {

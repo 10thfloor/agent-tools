@@ -17,7 +17,7 @@ export function parseJsonValues(text) {
     i = end
     while (i < s.length && /\s/.test(s[i])) i++
   }
-  return values.length ? values : null
+  return values
 }
 
 // Find the end index (exclusive) of one balanced {...} or [...] value.
