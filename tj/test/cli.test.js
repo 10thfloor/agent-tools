@@ -86,3 +86,15 @@ test('TJ_STATS=0 suppresses the footer; usage errors exit 2', () => {
   assert.equal(tj(['--tj-bogus']).status, 2)
   assert.equal(tj([]).status, 2)
 })
+
+test('leading --help/-h prints usage; after the command it is forwarded', () => {
+  for (const flag of ['--help', '-h']) {
+    const r = tj([flag])
+    assert.equal(r.status, 0)
+    assert.match(r.stdout, /^tj: run any CLI/)
+  }
+  const echoArgs = fakeCli('echoargs', `out(JSON.stringify(args))`)
+  const fwd = tj([echoArgs, '--help'])
+  assert.equal(fwd.status, 0)
+  assert.deepEqual(decode(fwd.stdout), ['--help'])
+})

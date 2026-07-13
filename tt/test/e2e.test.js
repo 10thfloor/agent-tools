@@ -123,3 +123,15 @@ test('missing command in an empty dir is a friendly error', () => {
   assert.equal(r.status, 2)
   assert.match(r.stderr, /no test command detected/)
 })
+
+test('leading --help/-h prints usage; after a command it is forwarded', () => {
+  const { proj, cache } = makeProject()
+  for (const flag of ['--help', '-h']) {
+    const r = tt([flag], proj, cache)
+    assert.equal(r.status, 0)
+    assert.match(r.stdout, /^tt: run tests/)
+  }
+  const fwd = tt(['node', '--help'], proj, cache)
+  assert.equal(fwd.status, 0)
+  assert.equal(decode(fwd.stdout).summary.command, 'node --help')
+})

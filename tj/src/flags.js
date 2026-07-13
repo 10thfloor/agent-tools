@@ -17,7 +17,7 @@ Flags consumed by tj (never forwarded):
   --tj-profile=<name>    generic | github | kubernetes | aws
   --tj-delimiter=<d>     comma (default) | tab | pipe
   --tj-no-stats          no tokens-saved footer on stderr
-  --tj-help              this help
+  --tj-help              this help (--help / -h before the command also works)
 
 Environment: TJ_RAW=1, TJ_PRUNE=0, TJ_STATS=0, TJ_PROFILE, TJ_DELIMITER
 `
@@ -44,6 +44,8 @@ export function parseArgs(argv, env = process.env) {
     else if (arg.startsWith('--tj-profile=')) opts.profile = arg.slice('--tj-profile='.length)
     else if (arg.startsWith('--tj-delimiter=')) opts.delimiter = arg.slice('--tj-delimiter='.length)
     else if (arg.startsWith('--tj-')) throw new UsageError(`tj: unknown flag ${arg}`)
+    // Only before the command: `tj gh pr list --help` must forward --help.
+    else if ((arg === '--help' || arg === '-h') && !cmd.length) opts.help = true
     else cmd.push(arg)
   }
   if (!(Object.hasOwn(DELIMITERS, opts.delimiter))) throw new UsageError(`tj: invalid delimiter "${opts.delimiter}"`)

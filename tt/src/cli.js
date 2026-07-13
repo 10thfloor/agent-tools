@@ -20,6 +20,7 @@ Usage:
 
 Flags: --tt-raw (no condensing), --tt-json (JSON instead of TOON),
        --tt-max=<n> (failure row cap, default 40), --tt-help
+       (--help / -h before the command also works)
 Env:   TT_CACHE_DIR (cache location, default ~/.cache/tt)
 
 vitest/jest (via the default npm test script) emit their native JSON report
@@ -43,6 +44,8 @@ export function parseArgs(argv) {
       flags.fail = Number(a.slice('--tt-fail='.length))
       if (!Number.isInteger(flags.fail) || flags.fail < 1) throw new Error('tt: --tt-fail needs a positive integer')
     } else if (a.startsWith('--tt-')) throw new Error(`tt: unknown flag ${a}`)
+    // Only before the command: `tt npm test -- --help` must forward --help.
+    else if ((a === '--help' || a === '-h') && !cmd.length) flags.help = true
     else cmd.push(a)
   }
   return { cmd, flags }
