@@ -17,9 +17,8 @@ measured with real tokenizers, with no loss of the data agents actually use.
 
 ### Assumptions (autonomous session — flagging instead of asking)
 
-1. Wrapper is a Node.js CLI (`ght`) in the agent-tools suite
-   (`~/Documents/agent-tools/ght`); not published to npm as part of
-   this task.
+1. Wrapper is a Node.js CLI (`ght`) in the agent-tools suite (the `ght/`
+   package); not published to npm as part of this task.
 2. The official `@toon-format/toon` encoder is used rather than a hand-rolled
    one (spec compliance > zero-dependency purity).
 3. Default behavior may prune GitHub hypermedia noise (`node_id`,

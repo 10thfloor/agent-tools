@@ -1,12 +1,10 @@
-import { homedir } from 'node:os'
-import { join } from 'node:path'
 import { encode } from '@toon-format/toon'
 import { gatherFleet } from './gather.js'
 
 export const USAGE = `fleet — cross-project overview of repos, worktrees, and agents
 
 Usage:
-  fleet [roots...]        one row per repo (default root: ~/Documents,
+  fleet [roots...]        one row per repo (default root: current directory,
                           or FLEET_ROOTS=path:path)
   fleet --all             flattened per-worktree rows across all repos
 
@@ -45,7 +43,7 @@ export async function runFleet(argv, env = process.env) {
     process.stdout.write(USAGE)
     return 0
   }
-  const scanRoots = roots.length ? roots : (env.FLEET_ROOTS ? env.FLEET_ROOTS.split(':').filter(Boolean) : [join(homedir(), 'Documents')])
+  const scanRoots = roots.length ? roots : (env.FLEET_ROOTS ? env.FLEET_ROOTS.split(':').filter(Boolean) : [process.cwd()])
   const repos = await gatherFleet(scanRoots, env)
   if (!repos.length) {
     process.stderr.write(`fleet: no git repositories found under ${scanRoots.join(', ')}\n`)

@@ -11,8 +11,8 @@ TOON decoder), with a git-only fallback when `wt` is unavailable.
 
 ### Assumptions (autonomous session)
 
-1. Default root is `~/Documents`, scanned one level deep for repos (a dir
-   with `.git`); override with positional roots or `FLEET_ROOTS`
+1. Default root is the current directory, scanned one level deep for repos
+   (a dir with `.git`); override with positional roots or `FLEET_ROOTS`
    (colon-separated). Hidden dirs, `node_modules`, and `*.worktrees`
    satellites are skipped; repos discovered via a linked worktree are
    grouped under their main worktree.
@@ -44,4 +44,4 @@ fleet/test/            → e2e over a temp root with real git repos + real
 
 `npm test` passes; a temp root with one dirty multi-worktree repo and one
 clean repo yields correct rows and sorting; `--all` flattens; satellites
-are grouped not duplicated; live run on ~/Documents works.
+are grouped not duplicated; live run on a directory of repos works.

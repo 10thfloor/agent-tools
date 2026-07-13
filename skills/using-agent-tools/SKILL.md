@@ -48,4 +48,4 @@ Don't work directly on main: `cd "$(wt new -m "<one-line intent>")"`
 - Running `gh` directly because a flag looks ght-specific — ght forwards
   every argument except `--ght-*`.
 
-Per-tool details: `~/Documents/agent-tools/<tool>/README.md`.
+Per-tool details: each tool's `README.md`.

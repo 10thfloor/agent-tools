@@ -28,11 +28,11 @@ npm install
 npm link        # puts `ght` on PATH; or call bin/ght.js directly
 ```
 
-Or alias it in your shell rc (survives nvm version switches, interactive
-shells only):
+Or alias it in your shell rc (survives node version-manager switches,
+interactive shells only):
 
 ```sh
-alias ght='"/path/to/ght/bin/ght.js"'
+alias ght='"/absolute/path/to/ght/bin/ght.js"'
 ```
 
 Requires Node >= 18 and an installed, authenticated `gh`.

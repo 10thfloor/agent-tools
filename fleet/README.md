@@ -7,16 +7,16 @@ how many have a **live agent** working in them right now.
 
 ```
 $ fleet
-  REPO         WORK                                      WTS   PR  AG  PATH
-● agent-tools  editing ., fleet (8 files)                1●/1      1   ~/Documents/agent-tools
-● New project  editing public, src (12 files +521/-128)  2●/2      1   ~/Documents/New project
-○ old-demo     at: final tweaks                          1●/3          ~/Documents/old-demo
+  REPO      WORK                                      WTS   PR  AG  PATH
+● api       editing handlers, db (6 files +180/-40)   2●/2  #82 1   ~/code/api
+● web       spike: new checkout flow                  1●/1      1   ~/code/web
+○ cli-tool  at: bump deps                             1●/3          ~/code/cli-tool
 
 $ fleet --all        # flattened per-worktree rows across every repo
 ```
 
-Defaults to scanning `~/Documents` one level deep; pass roots as arguments
-or set `FLEET_ROOTS=path:path`. `*.worktrees` satellite dirs are skipped
+Defaults to scanning the current directory one level deep (run it where your
+repos live); pass roots as arguments or set `FLEET_ROOTS=path:path`. `*.worktrees` satellite dirs are skipped
 (their checkouts group under the main repo), as are hidden dirs and
 `node_modules`. Active repos sort first.
 

@@ -91,9 +91,10 @@ in `src/profiles.js`.
 
 ```
 $ fleet
-  REPO         WORK                                      WTS   PR  AG  PATH
-● agent-tools  editing ., fleet (8 files)                1●/1      1   ~/Documents/agent-tools
-● New project  editing public, src (12 files +521/-128)  2●/2      1   ~/Documents/New project
+  REPO      WORK                                      WTS   PR  AG  PATH
+● api       editing handlers, db (6 files +180/-40)   2●/2  #82 1   ~/code/api
+● web       spike: new checkout flow                  1●/1      1   ~/code/web
+○ cli-tool  at: bump deps                             1●/2          ~/code/cli-tool
 $ fleet --all     # flattened per-worktree rows across every repo
 ```
 

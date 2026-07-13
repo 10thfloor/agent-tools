@@ -10,13 +10,13 @@ worktrees in one predictable place: `<repo-parent>/<repo>.worktrees/<branch>`.
 $ wt new -m "spike: faster auth flow"   # no name needed — wt picks one
 • no branch name given — using 'wt-1' (add intent with -m "...")
 ✓ worktree ready (new branch from HEAD) — "spike: faster auth flow"
-/Users/mk/Documents/myapp.worktrees/wt-1
+/home/you/code/myapp.worktrees/wt-1
 
 $ wt                         # on a terminal: activity-aware table
   BRANCH             WORK                              ACTIVITY        PR    PATH
-● main (main)        at: fix login redirect            dirty:12 agent        ~/Documents/myapp
-● wt-1               spike: faster auth flow           dirty:3 pr:#41  #41   ~/Documents/myapp.worktrees/wt-1
-○ spike/old-idea     2 commits, last: try cache layer  —                     ~/Documents/myapp.worktrees/spike-old-idea
+● main (main)        at: fix login redirect            dirty:12 agent        ~/code/myapp
+● wt-1               spike: faster auth flow           dirty:3 pr:#41  #41   ~/code/myapp.worktrees/wt-1
+○ spike/old-idea     2 commits, last: try cache layer  —                     ~/code/myapp.worktrees/spike-old-idea
 
 $ wt clean --yes             # remove everything idle, keep everything active
 ```
@@ -91,8 +91,8 @@ Piped list output (what an agent sees):
 
 ```
 [2]{branch,status,activity,dirty,ahead,behind,pr,main,head,path}:
-  main,active,"dirty:12 agent",12,0,0,"",true,8e5671d,/Users/mk/Documents/myapp
-  feat/x,idle,"",0,0,0,"",false,8e5671d,/Users/mk/Documents/myapp.worktrees/feat-x
+  main,active,"dirty:12 agent",12,0,0,"",true,8e5671d,/home/you/code/myapp
+  feat/x,idle,"",0,0,0,"",false,8e5671d,/home/you/code/myapp.worktrees/feat-x
 ```
 
 ## Pointing your agent at it

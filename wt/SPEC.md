@@ -14,9 +14,8 @@ those). Output is agent-first: human table on a TTY, TOON when piped.
 
 ### Assumptions (autonomous session — flagging instead of asking)
 
-1. "Per project" = the tool lives in the agent-tools suite
-   (`~/Documents/agent-tools/wt`) **and** operates on whatever repo you run
-   it in;
+1. "Per project" = the tool lives in the agent-tools suite (the `wt/`
+   package) **and** operates on whatever repo you run it in;
    worktrees are stored per project at `<repo-parent>/<repo>.worktrees/<branch>`.
 2. "Agent is working on them" is detected heuristically: a `claude` / `node`
    / `bun` / `python` process whose cwd is inside the worktree (via `lsof`,
@@ -38,7 +37,7 @@ temp dirs.
 ## Commands
 
 ```
-Install: npm install && npm link      (in ~/Documents/wt)
+Install: npm install && npm link      (in wt/)
 Test:    npm test                     (node --test test/*.test.js)
 Run:     wt / wt new <branch> / wt rm <branch> / wt clean / wt path <branch>
 ```

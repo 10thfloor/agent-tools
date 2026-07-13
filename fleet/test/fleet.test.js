@@ -90,6 +90,17 @@ test('--json and positional roots work; empty root exits 1', () => {
   assert.match(empty.stderr, /no git repositories found/)
 })
 
+test('with no roots and no FLEET_ROOTS, scans the current directory', () => {
+  const root = makeRoot()
+  const r = spawnSync(process.execPath, [BIN, '--json'], {
+    cwd: root,
+    encoding: 'utf8',
+    env: { ...process.env, FLEET_WT: WT_BIN, WT_NO_PROC: '1', WT_GH: '/nonexistent/gh', FLEET_ROOTS: '' },
+  })
+  assert.equal(r.status, 0)
+  assert.equal(JSON.parse(r.stdout).length, 2) // alpha + beta under cwd
+})
+
 test('git-only fallback when wt is unavailable', () => {
   const root = makeRoot()
   const r = spawnSync(process.execPath, [BIN], {
