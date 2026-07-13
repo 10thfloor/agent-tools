@@ -16,7 +16,8 @@ $ fleet --all        # flattened per-worktree rows across every repo
 ```
 
 Defaults to scanning the current directory one level deep (run it where your
-repos live); pass roots as arguments or set `FLEET_ROOTS=path:path`. `*.worktrees` satellite dirs are skipped
+repos live); pass roots as arguments or set `FLEET_ROOTS` (delimited by `:`,
+or `;` on Windows). `*.worktrees` satellite dirs are skipped
 (their checkouts group under the main repo), as are hidden dirs and
 `node_modules`. Active repos sort first.
 

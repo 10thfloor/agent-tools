@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { basename, dirname, join } from 'node:path'
+import { basename, delimiter, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { decode } from '@toon-format/toon'
 import { discoverRepos } from '../src/discover.js'
@@ -99,6 +99,20 @@ test('with no roots and no FLEET_ROOTS, scans the current directory', () => {
   })
   assert.equal(r.status, 0, r.stderr)
   assert.equal(JSON.parse(r.stdout).length, 2) // alpha + beta under cwd
+})
+
+test('FLEET_ROOTS accepts multiple roots via the platform delimiter', () => {
+  // Two independent roots joined by path.delimiter (':' on POSIX, ';' on
+  // Windows). Windows drive letters contain ':', so a hardcoded ':' split
+  // would shred them — this guards that regression.
+  const rootA = makeRoot()
+  const rootB = makeRoot()
+  const r = spawnSync(process.execPath, [BIN, '--json'], {
+    encoding: 'utf8',
+    env: { ...process.env, FLEET_ROOTS: `${rootA}${delimiter}${rootB}`, FLEET_WT: WT_BIN, WTREE_NO_PROC: '1', WTREE_GH: '/nonexistent/gh' },
+  })
+  assert.equal(r.status, 0, r.stderr)
+  assert.equal(JSON.parse(r.stdout).length, 4) // alpha+beta from each root
 })
 
 test('git-only fallback when wt is unavailable', () => {
