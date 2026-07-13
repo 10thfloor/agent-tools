@@ -1,6 +1,6 @@
 ---
 name: using-agent-tools
-description: Use when about to run gh, a test suite (npm test / pytest / cargo test / go test), git worktree commands, kubectl/aws or any other JSON-emitting CLI, when starting parallel or experimental work in a repo, when asked what's in progress across repos/worktrees/agents, or before pasting a large file or diff into context. Local suite - ght, tt, wt, tj, fleet, tok.
+description: Use when about to run gh, a test suite (npm test / pytest / cargo test / go test), git worktree commands, kubectl/aws or any other JSON-emitting CLI, when starting parallel or experimental work in a repo, when asked what's in progress across repos/worktrees/agents, or before pasting a large file or diff into context. Local suite - ght, tt, wtree, tj, fleet, tok.
 ---
 
 # Using agent-tools
@@ -17,7 +17,7 @@ a `name[N]{fields}:` header plus one comma-separated row per item);
 |---|---|---|
 | `gh <anything>` | `ght <same args>` | ~62% fewer tokens: GitHub noise pruned, users→login, repos→full_name, labels→names |
 | `npm test` / `pytest` / `cargo test` / `go test` | `tt` | summary + one row per failure; `tt <cmd...>` wraps any command |
-| `git worktree ...` | `wt new -m "intent"` / `wt rm <branch>` / `wt` | one command each; stdout is the path: `cd "$(wt new x)"` |
+| `git worktree ...` | `wtree new -m "intent"` / `wtree rm <branch>` / `wtree` | one command each; stdout is the path: `cd "$(wtree new x)"` |
 | `kubectl -o json` / `aws` / any JSON CLI | `tj <cmd...>` | prune profile auto-detected from the command name |
 | scanning repos for status | `fleet` | every repo: worktrees, PRs, work summaries, live agents |
 | pasting big files/diffs | `tok <file>` or `tok -- git diff` first | real tokenizer counts; `--max=5k` exits 1 when over |
@@ -27,16 +27,16 @@ a `name[N]{fields}:` header plus one comma-separated row per item);
 - Byte-exact raw output: `--ght-raw` / `--tj-raw` / `tt --tt-raw`
 - Full JSON shapes, still TOON: `--ght-no-prune` / `--tj-no-prune`
 - JSON for programmatic parsing: `--ght-json` / `--tj-json` /
-  `wt list --json` / `tok --json` — never feed TOON to jq
+  `wtree list --json` / `tok --json` — never feed TOON to jq
 - Full test log after a condensed run: `tt --tt-full` (cached);
   `tt --tt-last` re-reads the previous run without re-running
 
 ## Worktree habits
 
-Don't work directly on main: `cd "$(wt new -m "<one-line intent>")"`
-(branch name optional — wt generates wt-1, wt-2, …). Record progress with
-`wt note "<update>"`. `wt clean --yes` removes only idle worktrees;
-`wt rm` refuses dirty work without `--force`.
+Don't work directly on main: `cd "$(wtree new -m "<one-line intent>")"`
+(branch name optional — wtree generates wtree-1, wtree-2, …). Record progress with
+`wtree note "<update>"`. `wtree clean --yes` removes only idle worktrees;
+`wtree rm` refuses dirty work without `--force`.
 
 ## Common mistakes
 

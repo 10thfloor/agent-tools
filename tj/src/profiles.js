@@ -21,7 +21,10 @@ export const PROFILES = {
 const COMMAND_PROFILES = { gh: 'github', kubectl: 'kubernetes', oc: 'kubernetes', aws: 'aws' }
 
 export function profileNameFor(command) {
-  return COMMAND_PROFILES[basename(command ?? '')] ?? 'generic'
+  // Strip the directory and any executable extension so gh / gh.exe /
+  // /usr/bin/kubectl / kubectl.cmd all resolve to their profile.
+  const name = basename(command ?? '').replace(/\.(exe|cmd|bat|com|mjs|cjs|js|ps1)$/i, '')
+  return COMMAND_PROFILES[name] ?? 'generic'
 }
 
 const LABEL_KEYS = new Set(['id', 'node_id', 'url', 'name', 'color', 'default', 'description'])

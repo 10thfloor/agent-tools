@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process'
 import { readFileSync, statSync } from 'node:fs'
+import { prepSpawn } from './spawn.js'
 import { isDeepStrictEqual } from 'node:util'
 import { encode as toonEncode, decode as toonDecode } from '@toon-format/toon'
 import { parseBudget, buildRow, isBinary } from './count.js'
@@ -76,7 +77,7 @@ export async function runTok(argv) {
 
   const inputs = []
   if (command && command.length) {
-    const r = spawnSync(command[0], command.slice(1), { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })
+    const r = spawnSync(...prepSpawn(command[0], command.slice(1), { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 }))
     if (r.error) {
       process.stderr.write(`tok: failed to run ${command[0]}: ${r.error.message}\n`)
       return 1

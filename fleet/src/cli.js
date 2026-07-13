@@ -9,7 +9,7 @@ Usage:
   fleet --all             flattened per-worktree rows across all repos
 
 Flags: --json | --toon | --table, --help
-Env:   FLEET_ROOTS, FLEET_WT (wt binary; wt powers per-repo data)
+Env:   FLEET_ROOTS, FLEET_WT (wtree binary; wtree powers per-repo data)
 
 active = any worktree with uncommitted changes, unpushed commits, an open
 PR, a live agent, or a git lock. Table on a terminal, TOON when piped.

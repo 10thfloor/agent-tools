@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process'
 import { parseArgs, UsageError, USAGE } from './flags.js'
 import { profileNameFor } from './profiles.js'
 import { convert } from './convert.js'
+import { prepSpawn } from './spawn.js'
 
 const MAX_BUFFER = 256 * 1024 * 1024
 const est = (s) => Math.round(s.length / 4)
@@ -28,12 +29,12 @@ export function runTj(argv, env = process.env) {
   }
 
   if (opts.raw) {
-    const r = spawnSync(cmd[0], cmd.slice(1), { stdio: 'inherit' })
+    const r = spawnSync(...prepSpawn(cmd[0], cmd.slice(1), { stdio: 'inherit' }))
     if (r.error) return reportSpawnError(cmd[0], r.error)
     return r.status ?? 1
   }
 
-  const r = spawnSync(cmd[0], cmd.slice(1), { stdio: ['inherit', 'pipe', 'inherit'], maxBuffer: MAX_BUFFER })
+  const r = spawnSync(...prepSpawn(cmd[0], cmd.slice(1), { stdio: ['inherit', 'pipe', 'inherit'], maxBuffer: MAX_BUFFER }))
   if (r.error) return reportSpawnError(cmd[0], r.error)
 
   const out = r.stdout ?? Buffer.alloc(0)

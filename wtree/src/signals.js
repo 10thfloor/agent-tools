@@ -1,4 +1,6 @@
 import { spawnSync } from 'node:child_process'
+import { prepSpawn } from './spawn.js'
+import { pathWithin } from './worktrees.js'
 import { tryGit } from './run.js'
 
 export const EMPTY_WORK = { dirty: 0, ahead: 0, behind: 0, files: [], shortstat: '', commitsAhead: 0, lastSubject: '' }
@@ -62,12 +64,12 @@ function topDirs(files) {
 // Open PRs keyed by head branch, via gh. null = unavailable (no gh, no
 // GitHub remote, not authenticated) — callers degrade silently.
 export function openPrsByBranch(cwd, env = process.env) {
-  const gh = env.WT_GH || 'gh'
-  const r = spawnSync(gh, ['pr', 'list', '--state', 'open', '--json', 'number,isDraft,headRefName,url', '--limit', '200'], {
+  const gh = env.WTREE_GH || 'gh'
+  const r = spawnSync(...prepSpawn(gh, ['pr', 'list', '--state', 'open', '--json', 'number,isDraft,headRefName,url', '--limit', '200'], {
     encoding: 'utf8',
     cwd,
     timeout: 8000,
-  })
+  }))
   if (r.error || r.status !== 0) return null
   try {
     return new Map(JSON.parse(r.stdout).map((p) => [p.headRefName, p]))
@@ -78,8 +80,8 @@ export function openPrsByBranch(cwd, env = process.env) {
 
 // PR title lookup for --pr note auto-fill. null = gh unavailable.
 export function prTitle(cwd, number, env = process.env) {
-  const gh = env.WT_GH || 'gh'
-  const r = spawnSync(gh, ['pr', 'view', String(number), '--json', 'title'], { encoding: 'utf8', cwd, timeout: 8000 })
+  const gh = env.WTREE_GH || 'gh'
+  const r = spawnSync(...prepSpawn(gh, ['pr', 'view', String(number), '--json', 'title'], { encoding: 'utf8', cwd, timeout: 8000 }))
   if (r.error || r.status !== 0) return null
   try {
     return JSON.parse(r.stdout).title ?? null
@@ -91,7 +93,7 @@ export function prTitle(cwd, number, env = process.env) {
 // cwds of processes that look like an agent or dev tooling (claude, node,
 // bun, python). Best-effort: lsof missing or slow → empty list.
 export function agentCwds(env = process.env) {
-  if (env.WT_NO_PROC === '1') return []
+  if (env.WTREE_NO_PROC === '1') return []
   const r = spawnSync('lsof', ['-a', '-d', 'cwd', '-c', 'claude', '-c', 'node', '-c', 'bun', '-c', 'python', '-F', 'n'], {
     encoding: 'utf8',
     timeout: 4000,
@@ -105,7 +107,7 @@ export function deriveActivity(wt, work, pr, cwds) {
   if (work.dirty > 0) reasons.push(`dirty:${work.dirty}`)
   if (work.ahead > 0) reasons.push(`unpushed:${work.ahead}`)
   if (pr) reasons.push(`pr:#${pr.number}${pr.isDraft ? '(draft)' : ''}`)
-  if (cwds.some((c) => c === wt.path || c.startsWith(wt.path + '/'))) reasons.push('agent')
+  if (cwds.some((c) => pathWithin(wt.path, c))) reasons.push('agent')
   if (wt.locked) reasons.push('locked')
   return { active: reasons.length > 0, reasons }
 }

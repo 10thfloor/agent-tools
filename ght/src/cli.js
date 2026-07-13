@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process'
 import { parseArgs, UsageError, USAGE } from './flags.js'
 import { convert } from './convert.js'
+import { prepSpawn } from './spawn.js'
 
 const MAX_BUFFER = 256 * 1024 * 1024
 
@@ -23,15 +24,15 @@ export function runGht(argv, env = process.env) {
   const ghPath = env.GHT_GH_PATH || 'gh'
 
   if (opts.raw) {
-    const r = spawnSync(ghPath, gh, { stdio: 'inherit' })
+    const r = spawnSync(...prepSpawn(ghPath, gh, { stdio: 'inherit' }))
     if (r.error) return reportSpawnError(ghPath, r.error)
     return r.status ?? 1
   }
 
-  const r = spawnSync(ghPath, gh, {
+  const r = spawnSync(...prepSpawn(ghPath, gh, {
     stdio: ['inherit', 'pipe', 'inherit'],
     maxBuffer: MAX_BUFFER,
-  })
+  }))
   if (r.error) return reportSpawnError(ghPath, r.error)
 
   const out = r.stdout ?? Buffer.alloc(0)

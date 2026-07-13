@@ -53,21 +53,34 @@ export function findWorktree(items, ref) {
   )
 }
 
+// Compare filesystem paths tolerantly: git emits '/' while Node gives '\\' on
+// Windows, where the filesystem is also case-insensitive.
+export function samePathBase(p) {
+  const s = p.replace(/\\/g, '/')
+  return process.platform === 'win32' ? s.toLowerCase() : s
+}
+
+export function pathWithin(parent, child) {
+  const p = samePathBase(parent)
+  const c = samePathBase(child)
+  return c === p || c.startsWith(p + '/')
+}
+
 // The worktree containing a directory (longest path wins — worktrees can be
 // nested inside the main one, e.g. .claude/worktrees/*).
 export function worktreeAt(items, dir) {
   return items
-    .filter((w) => dir === w.path || dir.startsWith(w.path + '/'))
+    .filter((w) => pathWithin(w.path, dir))
     .sort((a, b) => b.path.length - a.path.length)[0]
 }
 
-// Generic names for wt new without a branch: wt-1, wt-2, ...
+// Generic names for wtree new without a branch: wtree-1, wtree-2, ...
 export function nextGenericBranch(cwd) {
-  const out = tryGit(['branch', '--list', 'wt-*', '--format=%(refname:short)'], { cwd }) ?? ''
+  const out = tryGit(['branch', '--list', 'wtree-*', '--format=%(refname:short)'], { cwd }) ?? ''
   const used = new Set(out.split('\n').filter(Boolean))
   let n = 1
-  while (used.has(`wt-${n}`)) n++
-  return `wt-${n}`
+  while (used.has(`wtree-${n}`)) n++
+  return `wtree-${n}`
 }
 
 // One-line intent notes, stored in git's native per-branch description.

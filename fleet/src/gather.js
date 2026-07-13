@@ -2,18 +2,19 @@ import { execFile, spawnSync } from 'node:child_process'
 import { basename } from 'node:path'
 import { promisify } from 'node:util'
 import { discoverRepos, groupByMainRoot } from './discover.js'
+import { prepSpawn } from './spawn.js'
 
 const execFileP = promisify(execFile)
 
 async function wtRows(main, env) {
-  const wtBin = env.FLEET_WT || 'wt'
+  const wtBin = env.FLEET_WT || 'wtree'
   try {
-    const { stdout } = await execFileP(wtBin, ['list', '--json'], {
+    const { stdout } = await execFileP(...prepSpawn(wtBin, ['list', '--json'], {
       cwd: main,
       env,
       timeout: 30000,
       maxBuffer: 64 * 1024 * 1024,
-    })
+    }))
     const rows = JSON.parse(stdout)
     return Array.isArray(rows) && rows.length ? rows : null
   } catch {

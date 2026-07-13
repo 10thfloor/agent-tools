@@ -36,11 +36,11 @@ export function cmdNew(cwd, branch, flags, env = process.env) {
   const items = listWorktrees(cwd)
   if (flags.pr) {
     if (branch) {
-      log('wt: use either a branch name or --pr, not both')
+      log('wtree: use either a branch name or --pr, not both')
       return 2
     }
     if (!/^[0-9]+$/.test(String(flags.pr))) {
-      log(`wt: --pr must be a number, got '${flags.pr}'`)
+      log(`wtree: --pr must be a number, got '${flags.pr}'`)
       return 2
     }
     branch = `pr-${flags.pr}`
@@ -73,7 +73,7 @@ export function cmdNew(cwd, branch, flags, env = process.env) {
     const from = flags.from || 'HEAD'
     // A ref can't start with '-'; reject so --from can't smuggle a git option.
     if (from.startsWith('-')) {
-      log(`wt: invalid --from ref '${from}'`)
+      log(`wtree: invalid --from ref '${from}'`)
       return 2
     }
     git(['worktree', 'add', '-b', branch, dest, from], { cwd })
@@ -108,11 +108,11 @@ export function cmdNote(cwd, args) {
   }
   const wt = ref ? findWorktree(items, ref) : worktreeAt(items, realpathSync(cwd))
   if (!wt) {
-    log(ref ? `wt: no worktree matches '${ref}'` : 'wt: not inside a worktree — wt note <branch> <text>')
+    log(ref ? `wtree: no worktree matches '${ref}'` : 'wtree: not inside a worktree — wtree note <branch> <text>')
     return 1
   }
   if (!wt.branch) {
-    log('wt: detached worktrees cannot hold a note (no branch)')
+    log('wtree: detached worktrees cannot hold a note (no branch)')
     return 1
   }
   if (text === undefined) {
@@ -126,17 +126,17 @@ export function cmdNote(cwd, args) {
 
 export function cmdRm(cwd, ref, flags) {
   if (!ref) {
-    log('wt: branch or path required — wt rm <branch>')
+    log('wtree: branch or path required — wtree rm <branch>')
     return 2
   }
   const items = listWorktrees(cwd)
   const wt = findWorktree(items, ref)
   if (!wt) {
-    log(`wt: no worktree matches '${ref}'`)
+    log(`wtree: no worktree matches '${ref}'`)
     return 1
   }
   if (wt.isMain) {
-    log('wt: refusing to remove the main worktree')
+    log('wtree: refusing to remove the main worktree')
     return 1
   }
   return removeOne(cwd, wt, flags)
@@ -149,7 +149,7 @@ function removeOne(cwd, wt, flags) {
   } else {
     const work = workStatus(wt)
     if (work.dirty > 0 && !flags.force) {
-      log(`wt: '${wt.branch ?? wt.path}' has ${work.dirty} uncommitted change(s) — commit first, or wt rm --force`)
+      log(`wtree: '${wt.branch ?? wt.path}' has ${work.dirty} uncommitted change(s) — commit first, or wtree rm --force`)
       return 1
     }
     git(['worktree', 'remove', ...(flags.force ? ['--force'] : []), wt.path], { cwd })
@@ -186,7 +186,7 @@ export function cmdClean(cwd, flags, env = process.env) {
 export function cmdPath(cwd, ref) {
   const wt = ref && findWorktree(listWorktrees(cwd), ref)
   if (!wt) {
-    log(`wt: no worktree matches '${ref ?? ''}'`)
+    log(`wtree: no worktree matches '${ref ?? ''}'`)
     return 1
   }
   out(wt.path)

@@ -1,30 +1,30 @@
 import { cmdList, cmdNew, cmdRm, cmdClean, cmdPath, cmdNote } from './commands.js'
 
-export const USAGE = `wt — friendly git worktrees, per project
+export const USAGE = `wtree — friendly git worktrees, per project
 
 Usage:
-  wt [list] [--toon|--json|--table]        list worktrees + activity (default)
-  wt new [branch] [-m <note>] [--from <ref>] [--pr <number>]
+  wtree [list] [--toon|--json|--table]     list worktrees + activity (default)
+  wtree new [branch] [-m <note>] [--from <ref>] [--pr <number>]
                                            create or reuse a worktree; prints its
-                                           path. No branch? wt names it wt-1, wt-2…
+                                           path. No branch? names it wtree-1, wtree-2…
                                            --pr N checks out GitHub PR #N (note
                                            auto-set from the PR title via gh)
-  wt note [branch] [text]                  show or set a worktree's one-line note
-  wt rm <branch|path> [--force]            remove a worktree (+ branch if merged)
-  wt clean [--yes]                         remove every idle worktree
-  wt path <branch>                         print a worktree's path
+  wtree note [branch] [text]               show or set a worktree's one-line note
+  wtree rm <branch|path> [--force]         remove a worktree (+ branch if merged)
+  wtree clean [--yes]                      remove every idle worktree
+  wtree path <branch>                      print a worktree's path
 
 Worktrees live in <repo-parent>/<repo>.worktrees/<branch>.
 A .worktreeinclude file (gitignore-style patterns, Claude Code-compatible)
 copies matching gitignored files (.env, secrets/) into new worktrees.
 active = uncommitted changes, unpushed commits, open PR, an agent/process
 working inside it, or git-locked. idle = none of those.
-WORK column = your note (wt new -m / wt note), else a summary generated from
-git state ("editing src, test (3 files +42/-7)", "2 commits, last: …").
+WORK column = your note (wtree new -m / wtree note), else a summary generated
+from git state ("editing src, test (3 files +42/-7)", "2 commits, last: …").
 List format: table on a terminal, TOON when piped (agents), --json for scripts.
-Shell helper: wtcd() { cd "$(wt new "$1")"; }
+Shell helper (bash/zsh): wtc() { cd "$(wtree new "$1")"; }
 
-Env: WT_GH (gh binary for PR lookup), WT_NO_PROC=1 (skip process detection)
+Env: WTREE_GH (gh binary for PR lookup), WTREE_NO_PROC=1 (skip process detection)
 `
 
 class UsageError extends Error {}
@@ -56,12 +56,12 @@ export function parseArgv(argv) {
   return { pos, flags }
 }
 
-export function runWt(argv, env = process.env) {
+export function runWtree(argv, env = process.env) {
   let parsed
   try {
     parsed = parseArgv(argv)
   } catch (err) {
-    process.stderr.write(`wt: ${err.message}\n\n${USAGE}`)
+    process.stderr.write(`wtree: ${err.message}\n\n${USAGE}`)
     return 2
   }
   const { pos, flags } = parsed
@@ -80,7 +80,7 @@ export function runWt(argv, env = process.env) {
       case 'note': return cmdNote(cwd, pos.slice(1))
       case 'path': return cmdPath(cwd, pos[1])
       default:
-        process.stderr.write(`wt: unknown command '${cmd}'\n\n${USAGE}`)
+        process.stderr.write(`wtree: unknown command '${cmd}'\n\n${USAGE}`)
         return 2
     }
   } catch (err) {
@@ -88,7 +88,7 @@ export function runWt(argv, env = process.env) {
       : /invalid reference: HEAD|does not have any commits/i.test(err.message)
         ? 'this repository has no commits yet — make an initial commit first'
         : err.message
-    process.stderr.write(`wt: ${msg}\n`)
+    process.stderr.write(`wtree: ${msg}\n`)
     return 1
   }
 }

@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { prepSpawn } from './spawn.js'
 
 export function defaultCommand(cwd) {
   const pkg = join(cwd, 'package.json')
@@ -25,7 +26,8 @@ export function run(cmd, { echo }) {
     // make a nested `node --test` behave as a runner-internal child process.
     const env = { ...process.env }
     delete env.NODE_TEST_CONTEXT
-    const child = spawn(cmd[0], cmd.slice(1), { stdio: ['inherit', 'pipe', 'pipe'], env })
+    const [c, a, o] = prepSpawn(cmd[0], cmd.slice(1), { stdio: ['inherit', 'pipe', 'pipe'], env })
+    const child = spawn(c, a, o)
     let text = ''
     child.stdout.on('data', (d) => {
       text += d

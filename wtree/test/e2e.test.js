@@ -1,13 +1,13 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { execFileSync, spawnSync } from 'node:child_process'
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync, chmodSync } from 'node:fs'
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { decode } from '@toon-format/toon'
 
-const BIN = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'wt.js')
+const BIN = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'wtree.js')
 
 function sh(cmd, args, cwd) {
   return execFileSync(cmd, args, { cwd, encoding: 'utf8' })
@@ -30,8 +30,18 @@ function wt(args, cwd, env = {}) {
   return spawnSync(process.execPath, [BIN, ...args], {
     cwd,
     encoding: 'utf8',
-    env: { ...process.env, WT_NO_PROC: '1', WT_GH: '/nonexistent/gh', ...env },
+    env: { ...process.env, WTREE_NO_PROC: '1', WTREE_GH: '/nonexistent/gh', ...env },
   })
+}
+
+// Cross-platform fake `gh`: a .mjs the tool runs via node (prepSpawn handles
+// running a .mjs on every OS — no shebang / chmod / /bin/sh). `body` is JS
+// with `args` (process.argv.slice(2)) and `out()`.
+function fakeGh(body) {
+  const dir = mkdtempSync(join(tmpdir(), 'wt-gh-'))
+  const path = join(dir, 'gh.mjs')
+  writeFileSync(path, `const args = process.argv.slice(2)\nconst out = (s) => process.stdout.write(s)\n${body}\n`)
+  return path
 }
 
 test('new creates a worktree, prints only its path on stdout, and is idempotent', () => {
@@ -139,29 +149,27 @@ test('clean is a dry run without --yes, removes idle worktrees with it', () => {
 test('open PRs mark a worktree active (stubbed gh)', () => {
   const repo = makeRepo()
   wt(['new', 'feat/pr'], repo)
-  const fake = join(mkdtempSync(join(tmpdir(), 'wt-gh-')), 'gh')
-  writeFileSync(fake, `#!/bin/sh\necho '[{"number":41,"isDraft":false,"headRefName":"feat/pr","url":"u"}]'\n`)
-  chmodSync(fake, 0o755)
+  const fake = fakeGh(`out('[{"number":41,"isDraft":false,"headRefName":"feat/pr","url":"u"}]\\n')`)
 
-  const rows = decode(wt(['list'], repo, { WT_GH: fake }).stdout)
+  const rows = decode(wt(['list'], repo, { WTREE_GH: fake }).stdout)
   const row = rows.find((r) => r.branch === 'feat/pr')
   assert.equal(row.status, 'active')
   assert.equal(row.pr, 41)
   assert.match(row.activity, /pr:#41/)
 
-  const clean = wt(['clean', '--yes'], repo, { WT_GH: fake })
+  const clean = wt(['clean', '--yes'], repo, { WTREE_GH: fake })
   assert.equal(clean.status, 0)
   assert.match(clean.stderr, /nothing to clean/)
 })
 
-test('new without a branch generates wt-1, wt-2, …', () => {
+test('new without a branch generates wtree-1, wtree-2, …', () => {
   const repo = makeRepo()
   const first = wt(['new'], repo)
   assert.equal(first.status, 0)
-  assert.equal(first.stdout.trim().endsWith('wt-1'), true)
-  assert.match(first.stderr, /using 'wt-1'/)
+  assert.equal(first.stdout.trim().endsWith('wtree-1'), true)
+  assert.match(first.stderr, /using 'wtree-1'/)
   const second = wt(['new'], repo)
-  assert.equal(second.stdout.trim().endsWith('wt-2'), true)
+  assert.equal(second.stdout.trim().endsWith('wtree-2'), true)
 })
 
 test('notes: -m stores intent, list shows it, wt note reads and updates it', () => {
@@ -267,11 +275,9 @@ test('--pr fetches pull/N/head into a pr-N worktree, note from gh title', () => 
   sh('git', ['remote', 'add', 'origin', originDir], repo)
   // Simulate GitHub's PR ref namespace in the bare origin.
   sh('git', ['update-ref', 'refs/pull/7/head', 'HEAD'], originDir)
-  const fake = join(mkdtempSync(join(tmpdir(), 'wt-gh-')), 'gh')
-  writeFileSync(fake, `#!/bin/sh\ncase "$*" in *view*) echo '{"title":"Fix crash"}';; *) echo '[]';; esac\n`)
-  chmodSync(fake, 0o755)
+  const fake = fakeGh(`if (args.includes('view')) out('{"title":"Fix crash"}\\n'); else out('[]\\n')`)
 
-  const r = wt(['new', '--pr', '7'], repo, { WT_GH: fake })
+  const r = wt(['new', '--pr', '7'], repo, { WTREE_GH: fake })
   assert.equal(r.status, 0)
   assert.match(r.stderr, /worktree ready \(PR #7\)/)
   assert.equal(r.stdout.trim().endsWith('pr-7'), true)

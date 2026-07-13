@@ -6,7 +6,7 @@ self-contained (own `package.json`, own tests); this repo is the suite.
 | Tool | Command | One-liner |
 |---|---|---|
 | [ght](ght/) | `ght` | Same `gh` commands, a third of the tokens — GitHub's JSON noise pruned, TOON out (**62% benchmarked**, [proof](ght/BENCHMARK.md)) |
-| [wt](wt/) | `wt` | Parallel work minus the ceremony — guarded one-command worktrees that know what's active, and why |
+| [wtree](wtree/) | `wtree` | Parallel work minus the ceremony — guarded one-command worktrees that know what's active, and why |
 | [tt](tt/) | `tt` | Runs your tests without flooding agent context — a ~40-token verdict by default, every detail on demand from one cached run |
 | [tj](tj/) | `tj` | Any JSON-speaking CLI in TOON — profiles strip what agents never read (kubectl, aws, gh, …) |
 | [fleet](fleet/) | `fleet` | Your whole workspace at a glance — every repo's worktrees, PRs, and live agents in one table |
@@ -33,16 +33,16 @@ $ ght pr list -R cli/cli --limit 2 --json number,title,author,state
 **62.2% saved**, o200k and cl100k tokenizers agreeing.
 Methodology + per-scenario table: [ght/BENCHMARK.md](ght/BENCHMARK.md).
 
-### wt
+### wtree
 
 ```
-$ cd "$(wt new -m "spike: faster auth")"     # create-or-reuse; stdout is the path
-$ wt
+$ cd "$(wtree new -m "spike: faster auth")"     # create-or-reuse; stdout is the path
+$ wtree
   BRANCH        WORK                                 ACTIVITY        PR
 ● main (main)   editing public, src (12 files ...)   dirty:12 agent
-● wt-1          spike: faster auth                   dirty:2
-$ wt new --pr 1234                           # review a PR in its own worktree
-$ wt clean --yes                             # sweep everything idle
+● wtree-1          spike: faster auth                   dirty:2
+$ wtree new --pr 1234                           # review a PR in its own worktree
+$ wtree clean --yes                             # sweep everything idle
 ```
 
 **Benchmark:** one command replaces the `worktree add`/`remove`/`prune` +
@@ -124,7 +124,7 @@ All six follow the same contract, so agents (and humans) can predict them:
 1. **TTY → human, pipe → TOON.** Tables and streams for people; compact
    [TOON](https://github.com/toon-format/toon) for agents, automatically.
 2. **stdout is data-only.** Paths, listings, converted output. All friendly
-   messages, footers, and hints go to stderr — `cd "$(wt new x)"` works.
+   messages, footers, and hints go to stderr — `cd "$(wtree new x)"` works.
 3. **One idempotent command per intent.** Re-running is always safe.
 4. **Exit codes and stderr pass through** from wrapped commands, always.
 5. **Degrade silently.** No `gh`? No `lsof`? Columns go empty; nothing breaks.
@@ -142,12 +142,30 @@ cd <tool> && npm install && npm link
 Node >= 22. Each tool's README has flags, env vars, and agent-integration
 snippets for `CLAUDE.md`/`AGENTS.md`.
 
+## Platforms
+
+All six tools run on **Linux, macOS, and Windows** — CI runs every tool's
+test suite on all three (`.github/workflows/ci.yml`). `npm link` installs
+working command shims on every platform.
+
+Windows specifics:
+
+- The worktree tool is **`wtree`**, not `wt` — `wt.exe` is Windows
+  Terminal's launcher and ships with Windows.
+- Child processes are spawned without a shell for real executables (git, gh,
+  …); `.cmd`/`.bat` shims like `npm` are detected and run correctly (Node
+  blocks spawning those without a shell). `tj vercel …` and friends work.
+- `wtree`'s agent detection uses `lsof` (macOS/Linux only); on Windows that
+  one signal is simply absent — every other column still works.
+- The `cd "$(wtree new x)"` trick is bash/zsh. In PowerShell:
+  `Set-Location (wtree new x)`.
+
 ## Security
 
-No shell execution anywhere (argument arrays only), parsed data never
-executed, and the file-copy / git-arg surfaces are containment-checked and
-input-validated. Trust model, hardening, and residual assumptions:
-[SECURITY.md](SECURITY.md).
+No shell for real executables (argument arrays; Windows `.cmd` shims are the
+one documented exception), parsed data never executed, and the file-copy /
+git-arg surfaces are containment-checked and input-validated. Trust model,
+hardening, and residual assumptions: [SECURITY.md](SECURITY.md).
 
 ## Agent skill
 

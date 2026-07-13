@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: ${{ matrix.tool }} · ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        tool: [ght, wtree, tt, tj, tok, fleet]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Tests create throwaway git repos; keep line endings stable on Windows
+      # so fixture contents round-trip byte-for-byte.
+      - name: Stabilize git for tests
+        run: git config --global core.autocrlf false
+
+      # fleet shells out to the sibling `wtree` binary, so it needs wtree's
+      # dependencies installed even when the matrix tool is fleet.
+      - name: Install wtree deps (fleet dependency)
+        run: npm install
+        working-directory: wtree
+
+      - name: Install ${{ matrix.tool }} deps
+        run: npm install
+        working-directory: ${{ matrix.tool }}
+
+      - name: Test ${{ matrix.tool }}
+        run: npm test
+        working-directory: ${{ matrix.tool }}
