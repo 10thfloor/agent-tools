@@ -66,6 +66,16 @@ test('generic profile leaves data untouched', () => {
   assert.deepEqual(prune(data, PROFILES.generic), data)
 })
 
+test('unsafe keys are dropped for every profile, prototype intact', () => {
+  const hostile = JSON.parse('{"ok":1,"__proto__":{"polluted":true},"prototype":{"x":1}}')
+  for (const p of [PROFILES.generic, PROFILES.github, PROFILES.kubernetes]) {
+    const out = prune(hostile, p)
+    assert.deepEqual(out, { ok: 1 })
+    assert.equal(Object.getPrototypeOf(out), Object.prototype)
+  }
+  assert.equal(({}).polluted, undefined)
+})
+
 test('jsonish port: concatenated values and NDJSON still parse', () => {
   assert.deepEqual(mergeValues(parseJsonValues('[1][2,3]')), [1, 2, 3])
   assert.deepEqual(parseJsonValues('{"a":1}\n{"a":2}'), [{ a: 1 }, { a: 2 }])

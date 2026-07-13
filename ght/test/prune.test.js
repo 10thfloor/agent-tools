@@ -75,6 +75,14 @@ test('recurses into arrays and leaves primitives alone', () => {
   assert.deepEqual(prune([{ a: 1, b_url: 'x' }, 'str', null, 7]), [{ a: 1 }, 'str', null, 7])
 })
 
+test('unsafe keys in untrusted JSON are dropped, prototype intact', () => {
+  const hostile = JSON.parse('{"a":1,"__proto__":{"polluted":true},"constructor":{"x":1}}')
+  const out = prune(hostile)
+  assert.deepEqual(out, { a: 1 })
+  assert.equal(Object.getPrototypeOf(out), Object.prototype)
+  assert.equal(({}).polluted, undefined)
+})
+
 test('camelCase gh --json fields are untouched', () => {
   const pr = { number: 1, headRefName: 'feat', isDraft: false, createdAt: '2026-01-01T00:00:00Z' }
   assert.deepEqual(prune(pr), pr)

@@ -9,6 +9,9 @@
 //     comma-separated string, and empty arrays below the root become "",
 //     so TOON can keep rows tabular
 //   - commit `verification` keeps only {verified, reason} (drops PGP blobs)
+// Guard against special keys in untrusted JSON reshaping the output object's
+// prototype chain (assigning `out.__proto__ = {...}` retargets the prototype).
+const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
 const DROP_KEYS = new Set(['node_id', 'gravatar_id', '_links', 'performed_via_github_app'])
 const KEEP_URL_KEYS = new Set(['url', 'html_url'])
 const LABEL_KEYS = new Set(['id', 'node_id', 'url', 'name', 'color', 'default', 'description'])
@@ -33,6 +36,7 @@ function walk(value, depth) {
   }
   const out = {}
   for (const [key, v] of Object.entries(value)) {
+    if (UNSAFE_KEYS.has(key)) continue
     if (DROP_KEYS.has(key)) continue
     if (key.endsWith('_url') && !KEEP_URL_KEYS.has(key)) continue
     if (key === 'verification' && v && typeof v === 'object') {

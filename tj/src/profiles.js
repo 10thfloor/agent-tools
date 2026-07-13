@@ -25,6 +25,8 @@ export function profileNameFor(command) {
 }
 
 const LABEL_KEYS = new Set(['id', 'node_id', 'url', 'name', 'color', 'default', 'description'])
+// Untrusted JSON keys that could retarget the output object's prototype.
+const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
 
 export function prune(value, profile) {
   return walk(value, profile, 0)
@@ -50,6 +52,7 @@ function walk(value, p, depth) {
   }
   const out = {}
   for (const [key, v] of Object.entries(value)) {
+    if (UNSAFE_KEYS.has(key)) continue
     if (p.dropKeys?.has(key)) continue
     if (p.urlKeep && key.endsWith('_url') && !p.urlKeep.has(key)) continue
     if (p.verificationTrim && key === 'verification' && v && typeof v === 'object') {

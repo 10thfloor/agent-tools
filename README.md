@@ -141,6 +141,13 @@ cd <tool> && npm install && npm link
 Node >= 22. Each tool's README has flags, env vars, and agent-integration
 snippets for `CLAUDE.md`/`AGENTS.md`.
 
+## Security
+
+No shell execution anywhere (argument arrays only), parsed data never
+executed, and the file-copy / git-arg surfaces are containment-checked and
+input-validated. Trust model, hardening, and residual assumptions:
+[SECURITY.md](SECURITY.md).
+
 ## Agent skill
 
 [skills/using-agent-tools](skills/using-agent-tools/SKILL.md) teaches Claude

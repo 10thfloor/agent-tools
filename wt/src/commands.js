@@ -39,6 +39,10 @@ export function cmdNew(cwd, branch, flags, env = process.env) {
       log('wt: use either a branch name or --pr, not both')
       return 2
     }
+    if (!/^[0-9]+$/.test(String(flags.pr))) {
+      log(`wt: --pr must be a number, got '${flags.pr}'`)
+      return 2
+    }
     branch = `pr-${flags.pr}`
   } else if (!branch) {
     branch = nextGenericBranch(cwd)
@@ -67,6 +71,11 @@ export function cmdNew(cwd, branch, flags, env = process.env) {
     how = `tracking origin/${branch}`
   } else {
     const from = flags.from || 'HEAD'
+    // A ref can't start with '-'; reject so --from can't smuggle a git option.
+    if (from.startsWith('-')) {
+      log(`wt: invalid --from ref '${from}'`)
+      return 2
+    }
     git(['worktree', 'add', '-b', branch, dest, from], { cwd })
     how = `new branch from ${from}`
   }
@@ -76,8 +85,9 @@ export function cmdNew(cwd, branch, flags, env = process.env) {
     if (title) note = `PR #${flags.pr}: ${title}`
   }
   if (note) setNote(cwd, branch, note)
-  const copied = copyIncluded(items[0].path, dest)
+  const { copied, skipped } = copyIncluded(items[0].path, dest)
   if (copied) log(`• copied ${copied} item(s) from .worktreeinclude`)
+  if (skipped) log(`⚠ skipped ${skipped} .worktreeinclude entr(y/ies) that escaped the repo`)
   log(`✓ worktree ready (${how})${note ? ` — "${note}"` : ''}`)
   out(dest)
   return 0

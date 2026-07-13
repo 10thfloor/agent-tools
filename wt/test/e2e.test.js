@@ -227,6 +227,39 @@ test('.worktreeinclude copies gitignored files into new worktrees', () => {
   assert.equal(readFileSync(join(dest, 'secrets', 'k.txt'), 'utf8'), 's\n')
 })
 
+test('.worktreeinclude cannot escape the repo (path traversal)', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'wt-esc-'))
+  const repo = join(dir, 'proj')
+  mkdirSync(repo)
+  sh('git', ['init', '-b', 'main'], repo)
+  sh('git', ['config', 'user.email', 'wt@test'], repo)
+  sh('git', ['config', 'user.name', 'wt test'], repo)
+  // A secret in a sibling directory, outside the repo.
+  writeFileSync(join(dir, 'secret.txt'), 'TOP SECRET\n')
+  writeFileSync(join(repo, 'a.txt'), 'hi\n')
+  writeFileSync(join(repo, '.worktreeinclude'), '../secret.txt\n')
+  sh('git', ['add', '.'], repo)
+  sh('git', ['commit', '-m', 'init'], repo)
+
+  const r = wt(['new', 'feat/evil'], repo)
+  assert.equal(r.status, 0)
+  const worktreeDir = r.stdout.trim()
+  // The escaping entry is skipped and never lands anywhere near the worktree.
+  assert.match(r.stderr, /skipped 1 .*escaped the repo/)
+  assert.equal(existsSync(join(worktreeDir, 'secret.txt')), false)
+  assert.equal(existsSync(join(worktreeDir, '..', 'secret.txt')), false)
+})
+
+test('--pr and --from reject option-injection values', () => {
+  const repo = makeRepo()
+  const badPr = wt(['new', '--pr', '--upload-pack=touch /tmp/pwned'], repo)
+  assert.equal(badPr.status, 2)
+  assert.match(badPr.stderr, /--pr must be a number/)
+  const badFrom = wt(['new', 'feat/x', '--from', '--evil'], repo)
+  assert.equal(badFrom.status, 2)
+  assert.match(badFrom.stderr, /invalid --from ref/)
+})
+
 test('--pr fetches pull/N/head into a pr-N worktree, note from gh title', () => {
   const repo = makeRepo()
   const originDir = join(dirname(repo), 'origin.git')
