@@ -11,6 +11,7 @@ self-contained (own `package.json`, own tests); this repo is the suite.
 | [tj](tj/) | `tj` | Any JSON-speaking CLI in TOON — profiles strip what agents never read (kubectl, aws, gh, …) |
 | [fleet](fleet/) | `fleet` | Your whole workspace at a glance — every repo's worktrees, PRs, and live agents in one table |
 | [tok](tok/) | `tok` | Know the token cost before you paste — real tokenizer counts, a CI-ready budget gate, and verified-lossless JSON→TOON packing |
+| [bench](bench/) | `bench` | Prove the savings on *your* repos — A/B a baseline command against its wrapped form, count real tokens, gate it in CI |
 
 ## Examples & benchmarks
 
@@ -18,6 +19,10 @@ Numbers below are live measurements counted with `tok` (o200k_base) on
 2026-07-13, except ght's, which come from its committed formal benchmark.
 The stderr footers the tools print are quick `~` estimates; these are real
 tokenizer counts.
+
+**Don't take our word for it** — [`bench`](bench/) measures the savings on
+your own repos and commands: `bench init`, edit `bench.json`, run `bench`.
+(On the public `cli/cli` repo it reproduces ~48–76% per scenario.)
 
 ### ght
 
@@ -119,7 +124,7 @@ you're in.
 
 ## House style
 
-All six follow the same contract, so agents (and humans) can predict them:
+All seven follow the same contract, so agents (and humans) can predict them:
 
 1. **TTY → human, pipe → TOON.** Tables and streams for people; compact
    [TOON](https://github.com/toon-format/toon) for agents, automatically.
@@ -144,7 +149,7 @@ snippets for `CLAUDE.md`/`AGENTS.md`.
 
 ## Platforms
 
-All six tools run on **Linux, macOS, and Windows** — CI runs every tool's
+All seven tools run on **Linux, macOS, and Windows** — CI runs every tool's
 test suite on all three (`.github/workflows/ci.yml`). `npm link` installs
 working command shims on every platform.
 

@@ -1,11 +1,11 @@
 ---
 name: using-agent-tools
-description: Use when about to run gh, a test suite (npm test / pytest / cargo test / go test), git worktree commands, kubectl/aws or any other JSON-emitting CLI, when starting parallel or experimental work in a repo, when asked what's in progress across repos/worktrees/agents, or before pasting a large file or diff into context. Local suite - ght, tt, wtree, tj, fleet, tok.
+description: Use when about to run gh, a test suite (npm test / pytest / cargo test / go test), git worktree commands, kubectl/aws or any other JSON-emitting CLI, when starting parallel or experimental work in a repo, when asked what's in progress across repos/worktrees/agents, before pasting a large file or diff into context, or when asked to measure/prove token savings. Local suite - ght, tt, wtree, tj, fleet, tok, bench.
 ---
 
 # Using agent-tools
 
-Six local CLIs (on PATH) that cut token cost and hide git/CLI complexity.
+Local CLIs (on PATH) that cut token cost and hide git/CLI complexity.
 One shared contract: **piped output is TOON** (`key: value` lines; arrays as
 a `name[N]{fields}:` header plus one comma-separated row per item);
 **stdout is data only** — footers and hints go to stderr, never parse them;
@@ -21,6 +21,7 @@ a `name[N]{fields}:` header plus one comma-separated row per item);
 | `kubectl -o json` / `aws` / any JSON CLI | `tj <cmd...>` | prune profile auto-detected from the command name |
 | scanning repos for status | `fleet` | every repo: worktrees, PRs, work summaries, live agents |
 | pasting big files/diffs | `tok <file>` or `tok -- git diff` first | real tokenizer counts; `--max=5k` exits 1 when over |
+| proving the savings on this repo | `bench init` then `bench` | A/B baseline vs wrapped command in bench.json; `--min-saved=N` gates CI |
 
 ## Escape hatches (when full fidelity matters)
 

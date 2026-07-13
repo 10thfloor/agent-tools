@@ -1,0 +1,19 @@
+{
+  "name": "bench-cli",
+  "version": "0.1.0",
+  "description": "Token A/B benchmarks on your own workloads — prove the suite's savings on your repos, gate them in CI",
+  "type": "module",
+  "bin": {
+    "bench": "bin/bench.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "@toon-format/toon": "^2.3.0",
+    "gpt-tokenizer": "^3.4.0"
+  }
+}
