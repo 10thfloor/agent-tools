@@ -1,10 +1,16 @@
-# tt — run tests, get an agent-readable verdict
+# tt — run tests without flooding agent context
 
-`tt` runs your test suite and returns what an agent needs to decide its
-next move: the **exit code** (unchanged), a **summary**, and **one
-structured row per failure** — test name, file:line, assertion. The
-evaluating stays with the agent; `tt` makes it cost ~40 tokens instead of a
-full runner dump.
+`tt` fronts your real test runner and manages what reaches the agent's
+context. By default, only the **verdict** enters: counts, one structured
+row per failure (test name, file:line, assertion), and the child's exit
+code — ~40 tokens instead of a full runner dump. Everything else stays out
+of context but never out of reach: **progressive disclosure**, three tiers
+from one execution, all served from cache without re-running:
+
+1. verdict (default) → 2. one failure's complete block (`--tt-fail=N`) →
+3. the entire raw log (`--tt-full`)
+
+The evaluating stays with the agent; `tt` decides nothing.
 
 ## The loop
 
@@ -27,10 +33,9 @@ failing run **always fits in context**: the output is small by
 construction, so harness truncation can never eat the assertion or the
 stack frame you need.
 
-## Interrogate without re-running
+## Progressive disclosure, from one cached run
 
-Every run is cached, so a different view of the results never costs
-another suite execution:
+A different view of the results never costs another suite execution:
 
 - `tt --tt-last` — the verdict again, no re-run
 - `tt --tt-fail=2` — failure #2's **complete** block (full stack, uncapped)

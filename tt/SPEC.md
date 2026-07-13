@@ -1,16 +1,18 @@
-# Spec: tt — run tests, return an agent-readable verdict
+# Spec: tt — agent-facing test running with progressive disclosure
 
 ## Objective
 
 Test output is the most re-read text in any agent loop, and almost all of
-it is passing noise. `tt` runs the project's test command and returns the
-verdict an agent needs to decide its next move: exit code (unchanged),
-summary counts, and one structured row per failure (name, file:line,
-assertion) as TOON. tt never evaluates anything itself — the agent judges;
-tt makes judging cheap and truncation-proof. Full output is always cached:
-`tt --tt-full` retrieves it, `tt --tt-last` re-reads the verdict without
-re-running. On a TTY it streams through unchanged — a safety behavior for
-humans, not the use case.
+it is passing noise. `tt` fronts the project's real test runner and manages
+what reaches agent context. Default tier: the verdict — exit code
+(unchanged), summary counts, one structured row per failure (name,
+file:line, assertion) as TOON. Deeper tiers stay accessible on demand
+without re-running, from the cache of the run that already happened:
+`--tt-fail=<n>` for one failure's complete block, `--tt-full` for the whole
+raw log, `--tt-last` to replay the verdict. tt never evaluates anything
+itself — the agent judges; tt keeps judging cheap and truncation-proof. On
+a TTY it streams through unchanged — a safety behavior for humans, not the
+use case.
 
 ### Assumptions (autonomous session)
 

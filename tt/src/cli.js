@@ -7,7 +7,7 @@ import { condense, fullFailure } from './condense.js'
 import { defaultCommand, run } from './runner.js'
 import { reporterKind, reporterArgs, parseReport } from './reporters.js'
 
-export const USAGE = `tt — run the tests, get an agent-readable verdict
+export const USAGE = `tt — run tests without flooding agent context; details on demand
 
 Usage:
   tt                      run the project's test command (npm test / pytest /

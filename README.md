@@ -7,7 +7,7 @@ self-contained (own `package.json`, own tests); this repo is the suite.
 |---|---|---|
 | [ght](ght/) | `ght` | Same `gh` commands, a third of the tokens — GitHub's JSON noise pruned, TOON out (**62% benchmarked**, [proof](ght/BENCHMARK.md)) |
 | [wt](wt/) | `wt` | Parallel work minus the ceremony — guarded one-command worktrees that know what's active, and why |
-| [tt](tt/) | `tt` | Run the tests, read a ~40-token verdict — failures truncation-proof, second looks free |
+| [tt](tt/) | `tt` | Runs your tests without flooding agent context — a ~40-token verdict by default, every detail on demand from one cached run |
 | [tj](tj/) | `tj` | Any JSON-speaking CLI in TOON — profiles strip what agents never read (kubectl, aws, gh, …) |
 | [fleet](fleet/) | `fleet` | Your whole workspace at a glance — every repo's worktrees, PRs, and live agents in one table |
 | [tok](tok/) | `tok` | Know the token cost before you paste — real tokenizer counts, a CI-ready budget gate, and verified-lossless JSON→TOON packing |
@@ -52,7 +52,9 @@ gap grows with rows; the real win is the activity intelligence.
 
 ### tt
 
-Runs the suite, returns the verdict; the agent decides what's next.
+Fronts your real test runner and manages what reaches agent context:
+verdict by default, any depth of detail on demand — all from one cached
+run, never a re-execution.
 
 ```
 $ tt              # runs npm test / pytest / cargo test / go test
