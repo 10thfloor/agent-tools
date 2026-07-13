@@ -1,4 +1,4 @@
-# gh-toon benchmark
+# ght benchmark
 
 Token cost of reading `gh` output in an agent context, before and after `ght`.
 
@@ -21,7 +21,7 @@ Token cost of reading `gh` output in an agent context, before and after `ght`.
   strings containing markdown-link patterns; the encoded text itself is
   correctly quoted). Pruning is the only lossy step and is opt-out
   (`--ght-no-prune`).
-- Live data captured on 2026-07-12 from the public `cli/cli` repo; payloads saved in
+- Live data captured previously (offline recompute) from the public `cli/cli` repo; payloads saved in
   `bench/fixtures/` — reproduce with `npm run bench:offline`.
 
 ## Results — o200k_base tokenizer (GPT-4o/o1 family)

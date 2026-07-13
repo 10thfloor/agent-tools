@@ -1,4 +1,4 @@
-# Spec: gh-toon (`ght`) — token-efficient `gh` wrapper for coding agents
+# Spec: ght — token-efficient `gh` wrapper for coding agents
 
 ## Objective
 
@@ -18,7 +18,7 @@ measured with real tokenizers, with no loss of the data agents actually use.
 ### Assumptions (autonomous session — flagging instead of asking)
 
 1. Wrapper is a Node.js CLI (`ght`) in the agent-tools suite
-   (`~/Documents/agent-tools/gh-toon`); not published to npm as part of
+   (`~/Documents/agent-tools/ght`); not published to npm as part of
    this task.
 2. The official `@toon-format/toon` encoder is used rather than a hand-rolled
    one (spec compliance > zero-dependency purity).
@@ -44,7 +44,7 @@ Node >= 18, ESM. Dependencies: `@toon-format/toon` ^2.3.0 (runtime),
 ## Commands
 
 ```
-Install: npm install            (in gh-toon/)
+Install: npm install            (in ght/)
 Test:    npm test               (node --test test/)
 Bench:   npm run bench          (live capture + report; writes BENCHMARK.md)
          npm run bench:offline  (recompute from saved fixtures)
@@ -54,7 +54,7 @@ Run:     ./bin/ght.js <any gh args>
 ## Project Structure
 
 ```
-gh-toon/
+ght/
   bin/ght.js        → executable entry point
   src/flags.js      → --ght-* flag parsing, env overrides, usage text
   src/jsonish.js    → tolerant JSON parsing (single value, concatenated

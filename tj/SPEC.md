@@ -33,7 +33,7 @@ through untouched. Same stats footer, same flag conventions as ght/tt.
 
 ```
 tj/src/flags.js     → --tj-* parsing, env, usage
-tj/src/jsonish.js   → tolerant JSON parsing (ported from gh-toon)
+tj/src/jsonish.js   → tolerant JSON parsing (ported from ght)
 tj/src/profiles.js  → profile table + profile-driven prune walk
 tj/src/convert.js   → parse → prune(profile) → TOON/JSON
 tj/src/cli.js       → spawn, passthrough rules, stats footer

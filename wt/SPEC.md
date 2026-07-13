@@ -24,7 +24,7 @@ those). Output is agent-first: human table on a TTY, TOON when piped.
 3. "Active PR" uses `gh pr list` when `gh` is installed/authenticated and the
    repo has a GitHub remote; otherwise the PR column is silently empty.
 4. "Apply TOON if applicable" = `wt list` emits TOON when stdout is not a
-   TTY (the agent case), matching the gh-toon convention; `--table`,
+   TTY (the agent case), matching the ght convention; `--table`,
    `--toon`, `--json` override.
 5. Removing a worktree also deletes its branch when fully merged (`-d`);
    unmerged branches are kept with a note unless `--force`.
@@ -91,7 +91,7 @@ wt/
 
 ## Code Style
 
-Same as gh-toon: small pure modules, no classes, stderr for humans, stdout
+Same as ght: small pure modules, no classes, stderr for humans, stdout
 for machines.
 
 ## Testing Strategy

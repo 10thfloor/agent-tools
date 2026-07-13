@@ -93,7 +93,7 @@ const totalRaw = sumTk('o200k_base', 'raw')
 const totalGht = sumTk('o200k_base', 'ght')
 const totalTab = sumTk('o200k_base', 'ghtTab')
 
-const report = `# gh-toon benchmark
+const report = `# ght benchmark
 
 Token cost of reading \`gh\` output in an agent context, before and after \`ght\`.
 

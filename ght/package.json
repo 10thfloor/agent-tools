@@ -1,5 +1,5 @@
 {
-  "name": "gh-toon",
+  "name": "ght-cli",
   "version": "0.1.0",
   "description": "Token-efficient GitHub CLI wrapper for coding agents — converts gh JSON output to TOON",
   "type": "module",

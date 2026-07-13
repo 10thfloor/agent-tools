@@ -12,7 +12,7 @@ Usage:
 
 Flags: --max=<n|Nk|Nm> (exit 1 if any input exceeds it), --enc=o200k|cl100k,
        --json | --toon | --table, --help
-Counts use gpt-tokenizer (o200k_base default) — the same proxy the gh-toon
+Counts use gpt-tokenizer (o200k_base default) — the same proxy the ght
 benchmark used; Claude's tokenizer is not public.
 `
 
@@ -95,7 +95,7 @@ export async function runTok(argv) {
       }
     }
   } else if (!process.stdin.isTTY) {
-    inputs.push({ name: '(stdin)', text: readFileSync(0, 'utf8') })
+    inputs.push({ name: '(stdin)', text: await readStdin() })
   } else {
     process.stderr.write('tok: nothing to count\n\n' + USAGE)
     return 2
@@ -119,6 +119,14 @@ export async function runTok(argv) {
   else if (format === 'toon') process.stdout.write(toonEncode(report, { delimiter: ',' }) + '\n')
   else process.stdout.write(renderTable(rows, report.summary) + '\n')
   return overCount > 0 ? 1 : 0
+}
+
+// readFileSync(0) throws EAGAIN on non-blocking pipes (e.g. inside command
+// substitution); async iteration handles every stdin flavor.
+async function readStdin() {
+  const chunks = []
+  for await (const chunk of process.stdin) chunks.push(chunk)
+  return Buffer.concat(chunks).toString('utf8')
 }
 
 function renderTable(rows, summary) {

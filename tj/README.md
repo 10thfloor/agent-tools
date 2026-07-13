@@ -1,6 +1,6 @@
 # tj — TOON-ify any JSON-speaking CLI
 
-The [gh-toon](../gh-toon/) trick, generalized: `tj <command...>` runs any
+The [ght](../ght/) trick, generalized: `tj <command...>` runs any
 CLI and re-emits JSON stdout as comma-delimited TOON, after applying a
 per-CLI **prune profile** auto-detected from the command name.
 
@@ -33,6 +33,6 @@ Flags (consumed anywhere, never forwarded): `--tj-raw`, `--tj-no-prune`,
 `--tj-no-stats`. Env: `TJ_RAW=1`, `TJ_PRUNE=0`, `TJ_STATS=0`, `TJ_PROFILE`,
 `TJ_DELIMITER`.
 
-For `gh` specifically, [`ght`](../gh-toon/) remains the daily driver (same
+For `gh` specifically, [`ght`](../ght/) remains the daily driver (same
 github rules, plus its benchmark); `tj` is for every other JSON-speaking CLI
 your agents touch.

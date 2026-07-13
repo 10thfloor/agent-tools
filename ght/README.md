@@ -1,4 +1,4 @@
-# gh-toon (`ght`)
+# ght
 
 A drop-in wrapper around the GitHub CLI for **coding agents**. It runs `gh`
 with your exact arguments and re-emits JSON output as
@@ -23,7 +23,7 @@ o200k tokens) — the gap widens with row count as TOON amortizes the header
 ## Install
 
 ```sh
-cd gh-toon
+cd ght
 npm install
 npm link        # puts `ght` on PATH; or call bin/ght.js directly
 ```
@@ -32,7 +32,7 @@ Or alias it in your shell rc (survives nvm version switches, interactive
 shells only):
 
 ```sh
-alias ght='"/path/to/gh-toon/bin/ght.js"'
+alias ght='"/path/to/ght/bin/ght.js"'
 ```
 
 Requires Node >= 18 and an installed, authenticated `gh`.
