@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        tool: [ght, wtree, tt, tj, tok, fleet, bench]
+        tool: [ght, wtree, tt, tj, tok, fleet, bench, pe]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
