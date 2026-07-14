@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { appendFileSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
+import { appendFileSync, mkdirSync, realpathSync, writeFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 
 // Evidence lives OUTSIDE the repo (pilot rule: never committed, never in the
@@ -9,6 +9,8 @@ export function repoSlug(repo) {
   const real = realpathSync(repo)
   return `${basename(real)}-${createHash('sha256').update(real).digest('hex').slice(0, 8)}`
 }
+
+export const latestPath = (baseDir, repo) => join(baseDir, repoSlug(repo), 'latest')
 
 export function evidencePaths(baseDir, repo, runId) {
   const root = join(baseDir, repoSlug(repo))
@@ -35,6 +37,3 @@ export function initEvidence(paths, runId) {
 export function journal(paths, event, data = {}) {
   appendFileSync(paths.journal, JSON.stringify({ t: new Date().toISOString(), event, ...data }) + '\n')
 }
-
-export const sha256File = (path) =>
-  'sha256:' + createHash('sha256').update(readFileSync(path)).digest('hex')

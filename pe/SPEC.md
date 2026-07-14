@@ -106,7 +106,7 @@ pe unseal <run-id> [...]  pilot: reveal sealed Cairn result, log human outcome
 ```
 
 - stdout is data only: the verdict (TOON when piped, `{run, task, branch,
-  worktree, pr, state, tt{failed,passed}, cairn{recorded,bundle}, turns,
+  worktree, pr, state, tt{failed,passed}, cairn{recorded,evidence}, turns,
   tokens, durationS}`) and nothing else. Progress, stage narration, and
   hints go to stderr.
 - Exit codes, shadow mode: 0 delivered (ready or draft-only), 1 failed

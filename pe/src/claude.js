@@ -23,18 +23,20 @@ export function delegate({ bin, prompt, cwd, maxTurns, timeoutMs, transcriptPath
       timedOut = true
       child.kill('SIGKILL')
     }, timeoutMs)
+    const takeLine = (line) => {
+      if (!line.trim()) return
+      appendFileSync(transcriptPath, line + '\n')
+      try {
+        const ev = JSON.parse(line)
+        if (ev.type === 'result') result = ev
+      } catch { /* non-JSON line; kept in transcript anyway */ }
+    }
     child.stdout.on('data', (d) => {
       buf += d
       let nl
       while ((nl = buf.indexOf('\n')) !== -1) {
-        const line = buf.slice(0, nl)
+        takeLine(buf.slice(0, nl))
         buf = buf.slice(nl + 1)
-        if (!line.trim()) continue
-        appendFileSync(transcriptPath, line + '\n')
-        try {
-          const ev = JSON.parse(line)
-          if (ev.type === 'result') result = ev
-        } catch { /* non-JSON line; kept in transcript anyway */ }
       }
     })
     child.stderr.on('data', (d) => { stderr += d })
@@ -44,6 +46,7 @@ export function delegate({ bin, prompt, cwd, maxTurns, timeoutMs, transcriptPath
     })
     child.on('close', (code) => {
       clearTimeout(timer)
+      takeLine(buf) // a final line without a trailing newline still counts
       resolvePromise({ code, result, timedOut, stderr })
     })
   })

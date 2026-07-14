@@ -1,12 +1,11 @@
-import { spawnSync } from 'node:child_process'
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { encode } from '@toon-format/toon'
 import { loadConfig, UsageError } from './config.js'
-import { evidencePaths } from './evidence.js'
+import { evidencePaths, latestPath } from './evidence.js'
 import { runPipeline, exitCodeFor } from './run.js'
 import { unseal } from './cairn.js'
-import { prepSpawn } from './spawn.js'
+import { sh } from './exec.js'
 
 export const USAGE = `pe: principal-engineer harness wrapping headless Claude Code
 
@@ -61,8 +60,8 @@ export function parseArgv(argv) {
 
 const err = (s) => process.stderr.write(s + '\n')
 
-function emit(data, tty = process.stdout.isTTY) {
-  if (tty) {
+function emit(data) {
+  if (process.stdout.isTTY) {
     const flat = (obj, prefix = '') => Object.entries(obj).flatMap(([k, v]) =>
       v && typeof v === 'object' ? flat(v, `${prefix}${k}.`) : [[`${prefix}${k}`, v]])
     const rows = flat(data)
@@ -92,7 +91,7 @@ function verdictOf(result) {
 
 function resolveRun(cfg, repo, runId) {
   if (runId) return evidencePaths(cfg.evidenceDir, repo, runId)
-  const latest = evidencePaths(cfg.evidenceDir, repo, 'x').latest
+  const latest = latestPath(cfg.evidenceDir, repo)
   if (!existsSync(latest)) throw new UsageError('pe: no runs recorded for this repo')
   return evidencePaths(cfg.evidenceDir, repo, readFileSync(latest, 'utf8').trim())
 }
@@ -114,6 +113,9 @@ export async function runPe(argv) {
   const repo = resolve(flags.repo ?? process.cwd())
   let cfg
   try {
+    if (!existsSync(repo) || !statSync(repo).isDirectory()) {
+      throw new UsageError(`pe: repo not found: ${repo}`)
+    }
     cfg = loadConfig(repo)
   } catch (e) {
     err(e.message)
@@ -129,7 +131,7 @@ export async function runPe(argv) {
       const verdict = verdictOf(result)
       writeFileSync(result.paths.verdict, JSON.stringify(verdict, null, 2))
       if (result.worktree) {
-        spawnSync(...prepSpawn(cfg.bins.wtree, ['note', result.branch, `pe: ${result.state}`], { cwd: repo, encoding: 'utf8' }))
+        sh(cfg.bins.wtree, ['note', result.branch, `pe: ${result.state}`], { cwd: repo })
       }
       err(`pe: ${result.state}${result.pr?.url ? ` ${result.pr.url}` : ''}${result.message ? ` (${result.message.split('\n')[0]})` : ''}`)
       emit(verdict)
@@ -145,7 +147,7 @@ export async function runPe(argv) {
       if (!pos[1]) throw new UsageError('pe: run id required: pe unseal <run-id>')
       const paths = resolveRun(cfg, repo, pos[1])
       const sealed = unseal(paths, flags)
-      process.stdout.write(sealed.endsWith('\n') ? sealed : sealed + '\n')
+      process.stdout.write(sealed + '\n')
       err(`pe: unsealed ${pos[1]}; outcome logged to ${paths.outcome}`)
       return 0
     }

@@ -52,10 +52,13 @@ const out = (o) => process.stdout.write(JSON.stringify(o) + '\\n')
 out({ type: 'system', subtype: 'init' })
 const commit = (msg) => {
   execFileSync('git', ['add', '-A'], { cwd: process.cwd() })
-  execFileSync('git', ['commit', '-m', msg], { cwd: process.cwd() })
+  execFileSync('git', ['commit', '--allow-empty', '-m', msg], { cwd: process.cwd() })
 }
 if (script === 'sleep') {
   await new Promise((r) => setTimeout(r, 10_000))
+} else if (script === 'crash') {
+  process.stderr.write('boom: simulated claude failure\\n')
+  process.exit(1)
 } else if (script === 'no-commit') {
   // does nothing
 } else if (script === 'fail-then-fix') {
@@ -270,6 +273,27 @@ test('uncommitted work triggers remediation asking for a commit', () => {
   const calls = claudeCalls(sb)
   assert.equal(calls.length, 2)
   assert.match(calls[1].prompt, /no commits on the branch/)
+})
+
+test('a claude session that never completes is ERROR, not FAILED_TESTS', () => {
+  const sb = makeSandbox()
+  setScript(sb, 'crash')
+  const r = pe(['run', 'never happens'], sb)
+  assert.equal(r.status, 2)
+  const verdict = decode(r.stdout)
+  assert.equal(verdict.state, 'ERROR')
+  assert.match(verdict.message, /claude did not complete/)
+  assert.match(verdict.message, /boom/)
+  // no remediation round wasted on a broken environment, no PR
+  assert.equal(claudeCalls(sb).length, 1)
+  assert.equal(ghtLog(sb).length, 0)
+})
+
+test('a nonexistent --repo is a usage error, exit 2', () => {
+  const sb = makeSandbox()
+  const r = pe(['run', '--repo', join(sb.dir, 'no-such-repo'), 'x'], sb)
+  assert.equal(r.status, 2)
+  assert.match(r.stderr, /repo not found/)
 })
 
 test('wall-clock budget kills the run: ABORTED_BUDGET', () => {

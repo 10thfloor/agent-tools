@@ -1,14 +1,13 @@
-import { spawnSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { prepSpawn } from './spawn.js'
-import { sha256File } from './evidence.js'
+import { sh } from './exec.js'
 
-// Run `cairn review` and seal the full envelope as pilot evidence. In shadow
-// mode nothing beyond `recorded` and the evidence hash may leave this record
-// until `pe unseal`.
-export function reviewAndSeal({ cairn, repo, branch, sealedPath }) {
-  const args = ['--repo', repo, 'review', branch, '--base', cairn.base, '--format', 'json']
-  const r = spawnSync(...prepSpawn(cairn.bin, args, { encoding: 'utf8' }))
+// Run `cairn review` and seal the full envelope as pilot evidence. Blindness
+// is structural: in shadow mode the returned view simply lacks status,
+// findings, and bundle, so no downstream surface CAN leak them; only the
+// sealed file (and `pe unseal`) has them.
+export function reviewAndSeal({ cairn, repo, branch, base, sealedPath }) {
+  const r = sh(cairn.bin, ['--repo', repo, 'review', branch, '--base', base, '--format', 'json'])
   if (r.error) return { recorded: false, error: r.error.message }
   let envelope = null
   try {
@@ -22,14 +21,19 @@ export function reviewAndSeal({ cairn, repo, branch, sealedPath }) {
     raw: envelope ? undefined : r.stdout,
     stderr: r.stderr || undefined,
   }
-  writeFileSync(sealedPath, JSON.stringify(record, null, 2))
-  return {
+  const json = JSON.stringify(record, null, 2)
+  writeFileSync(sealedPath, json)
+  const view = {
     recorded: true,
+    evidenceHash: 'sha256:' + createHash('sha256').update(json).digest('hex'),
+    capturedAt: record.captured_at,
+  }
+  if (cairn.mode !== 'gate') return view
+  return {
+    ...view,
     status: envelope?.data?.status ?? null,
     findings: findingLines(envelope),
     bundle: bundleRef(envelope),
-    evidenceHash: sha256File(sealedPath),
-    capturedAt: record.captured_at,
   }
 }
 

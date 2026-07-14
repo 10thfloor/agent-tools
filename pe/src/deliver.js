@@ -1,19 +1,14 @@
-import { spawnSync } from 'node:child_process'
-import { writeFileSync } from 'node:fs'
-import { prepSpawn } from './spawn.js'
-
-const run = (bin, args, opts = {}) =>
-  spawnSync(...prepSpawn(bin, args, { encoding: 'utf8', ...opts }))
+import { sh } from './exec.js'
 
 // Delivery is harness-owned end to end: push the branch, open a draft PR,
 // flip to ready only when policy allows. The agent never touches any of it.
 export function push({ git, wt, branch }) {
-  const r = run(git, ['-C', wt, 'push', '-u', 'origin', branch])
+  const r = sh(git, ['-C', wt, 'push', '-u', 'origin', branch])
   return r.status === 0 ? null : (r.stderr || `git push exited ${r.status}`)
 }
 
 export function createPr({ ght, wt, title, bodyPath, base }) {
-  const r = run(ght, ['pr', 'create', '--draft', '--title', title, '--base', base, '--body-file', bodyPath], { cwd: wt })
+  const r = sh(ght, ['pr', 'create', '--draft', '--title', title, '--base', base, '--body-file', bodyPath], { cwd: wt })
   if (r.status !== 0) return { error: r.stderr || `pr create exited ${r.status}` }
   const url = (r.stdout.match(/https?:\/\/\S+/) ?? [''])[0]
   const number = Number((url.match(/\/pull\/(\d+)/) ?? [])[1] ?? 0) || null
@@ -22,7 +17,7 @@ export function createPr({ ght, wt, title, bodyPath, base }) {
 
 export function readyPr({ ght, wt, number, url }) {
   const ref = number ? String(number) : url
-  const r = run(ght, ['pr', 'ready', ref], { cwd: wt })
+  const r = sh(ght, ['pr', 'ready', ref], { cwd: wt })
   return r.status === 0 ? null : (r.stderr || `pr ready exited ${r.status}`)
 }
 
@@ -40,7 +35,7 @@ export function renderBody({ task, runId, commits, shortstat, tt, cairnBlock }) 
     `tt: ${tt.passed} passed, ${tt.failed} failed (re-run by the harness)`,
   ]
   if (cairnBlock) lines.push('', cairnBlock)
-  return lines.filter((l) => l !== null).join('\n') + '\n'
+  return lines.join('\n') + '\n'
 }
 
 const MERGE_NOTE = 'merge_authorized: false. This gate routes reviewer attention; it never authorizes merge.'
@@ -68,8 +63,4 @@ export function renderCairnBlock({ mode, runId, review }) {
   }
   lines.push('', MERGE_NOTE)
   return lines.join('\n')
-}
-
-export function writeBody(path, body) {
-  writeFileSync(path, body)
 }

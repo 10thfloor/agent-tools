@@ -1,8 +1,7 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { dirname, isAbsolute, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { spawnSync } from 'node:child_process'
-import { prepSpawn } from './spawn.js'
+import { sh } from './exec.js'
 
 const HOOK = join(dirname(fileURLToPath(import.meta.url)), '..', 'hooks', 'pretooluse.js')
 
@@ -21,16 +20,17 @@ export function writeWorktreeSettings(wt, git) {
     },
   }
   writeFileSync(join(dir, 'settings.local.json'), JSON.stringify(settings, null, 2))
-  excludeLocally(wt, git, '.claude/')
+  excludeLocally(wt, git)
 }
 
 // Repo-local ignore (common git dir info/exclude): keeps the generated
 // .claude/ out of the diff without committing anything.
-function excludeLocally(wt, git, pattern) {
-  const r = spawnSync(...prepSpawn(git, ['-C', wt, 'rev-parse', '--git-common-dir'], { encoding: 'utf8' }))
+function excludeLocally(wt, git) {
+  const pattern = '.claude/'
+  const r = sh(git, ['-C', wt, 'rev-parse', '--git-common-dir'])
   if (r.status !== 0) return
   let common = r.stdout.trim()
-  if (!join(common, '.').startsWith('/') && !/^[A-Za-z]:/.test(common)) common = join(wt, common)
+  if (!isAbsolute(common)) common = join(wt, common)
   const exclude = join(common, 'info', 'exclude')
   const current = existsSync(exclude) ? readFileSync(exclude, 'utf8') : ''
   if (!current.split('\n').includes(pattern)) {
