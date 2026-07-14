@@ -194,9 +194,10 @@ export function cmdClean(cwd, flags, env = process.env) {
 }
 
 export function cmdPath(cwd, ref) {
-  const wt = ref && findWorktree(listWorktrees(cwd), ref)
+  const items = listWorktrees(cwd)
+  const wt = ref ? findWorktree(items, ref) : items[0]
   if (!wt) {
-    log(`wtree: no worktree matches '${ref ?? ''}'`)
+    log(`wtree: no worktree matches '${ref}'`)
     return 1
   }
   out(wt.path)

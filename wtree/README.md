@@ -31,6 +31,13 @@ agent/process working inside it (`claude`/`node`/`bun`/`python` detected via
 cd wtree && npm install && npm link
 ```
 
+Then (recommended) add the one-line shell hook so `wtree new` / `wtree cd`
+land you in the worktree directly, no `cd "$(...)"` needed:
+
+```sh
+echo 'eval "$(wtree shell-init zsh)"' >> ~/.zshrc   # or bash | fish | powershell
+```
+
 Requires Node >= 22 and git. Optional: `gh` (authenticated) for the PR
 column and PR-title notes, `lsof` for agent detection; both degrade
 silently when missing.
@@ -45,10 +52,12 @@ because `wt.exe` is Windows Terminal. Agent detection needs `lsof`
 |---|---|
 | `wtree` / `wtree list` | list worktrees with work summary, activity, PR, path |
 | `wtree new [branch] [-m <note>] [--from <ref>] [--pr <n>]` | create or reuse a worktree (idempotent). No branch name? `wtree` generates one (`wtree-1`, `wtree-2`, …). Uses the local branch if it exists, else tracks `origin/<branch>`, else branches from `--from`/HEAD. Prints the path on stdout |
+| `wtree cd [branch]` | jump to a worktree; no branch jumps back to the main worktree (needs the shell hook) |
 | `wtree note [branch] [text]` | show or set a worktree's one-line note (from inside a worktree, the branch is optional) |
 | `wtree rm <branch\|path> [--force]` | remove a worktree; refuses dirty ones without `--force`; deletes the branch if merged, keeps it with a note otherwise |
 | `wtree clean [--yes]` | dry-run list of idle worktrees; `--yes` removes them |
-| `wtree path <branch>` | print a worktree's path |
+| `wtree path [branch]` | print a worktree's path; no branch prints the main worktree's |
+| `wtree shell-init <shell>` | print the shell hook (`bash`, `zsh`, `fish`, `powershell`) that makes `new`/`cd` change directory |
 
 Guardrails: the main worktree can never be removed; dirty work is never
 deleted without `--force`; unmerged branches survive removal by default.
@@ -87,15 +96,16 @@ overwritten; negation patterns aren't supported.
   messages go to stderr. That's what makes this work:
 
 ```sh
-cd "$(wtree new feat/x)"           # bash/zsh: create-or-reuse, then jump in
-wtc() { cd "$(wtree new "$1")"; }  # handy bash/zsh helper
+eval "$(wtree shell-init zsh)"     # once, in your shell rc (bash|zsh|fish|powershell)
+wtree new feat/x                   # …and now this lands you in the worktree
+wtree cd                           # back to the main worktree
 ```
 
-PowerShell:
+Without the hook (scripts, agents, one-offs), stdout is still just the path:
 
-```powershell
-Set-Location (wtree new feat/x)
-function wtc { Set-Location (wtree new $args[0]) }
+```sh
+cd "$(wtree new feat/x)"           # bash/zsh
+Set-Location (wtree new feat/x)    # PowerShell
 ```
 
 Piped list output (what an agent sees):

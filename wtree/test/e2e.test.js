@@ -319,3 +319,46 @@ test('new from origin branch sets up tracking', () => {
   const upstream = sh('git', ['-C', r.stdout.trim(), 'rev-parse', '--abbrev-ref', '@{upstream}']).trim()
   assert.equal(upstream, 'origin/feat/remote')
 })
+
+test('shell-init prints the hook per shell; no shell is a usage error', () => {
+  const repo = makeRepo()
+  const zsh = wt(['shell-init', 'zsh'], repo)
+  assert.equal(zsh.status, 0)
+  assert.match(zsh.stdout, /wtree\(\) \{/)
+  assert.match(zsh.stdout, /command wtree/)
+  assert.match(wt(['shell-init', 'fish'], repo).stdout, /function wtree/)
+  assert.match(wt(['shell-init', 'powershell'], repo).stdout, /Set-Location/)
+  const bad = wt(['shell-init'], repo)
+  assert.equal(bad.status, 2)
+  assert.match(bad.stderr, /bash \| zsh \| fish \| powershell/)
+})
+
+test('cd without the hook explains shell-init; path with no branch prints main', () => {
+  const repo = makeRepo()
+  const r = wt(['cd', 'feat/x'], repo)
+  assert.equal(r.status, 1)
+  assert.match(r.stderr, /shell-init/)
+  const p = wt(['path'], repo)
+  assert.equal(p.status, 0)
+  assert.equal(p.stdout.trim().endsWith('proj'), true)
+})
+
+const HAS_BASH = process.platform !== 'win32'
+  && spawnSync('bash', ['--version'], { encoding: 'utf8' }).status === 0
+
+test('the bash hook makes wtree new / wtree cd change directory', { skip: !HAS_BASH }, () => {
+  const repo = makeRepo()
+  // A `wtree` on PATH for `command wtree` inside the hook.
+  const bindir = mkdtempSync(join(tmpdir(), 'wt-hookbin-'))
+  writeFileSync(join(bindir, 'wtree'), `#!/bin/sh\nexec "${process.execPath}" "${BIN}" "$@"\n`, { mode: 0o755 })
+  const script = 'eval "$(wtree shell-init bash)" && wtree new feat/hook && pwd && wtree cd && pwd'
+  const r = spawnSync('bash', ['-c', script], {
+    cwd: repo,
+    encoding: 'utf8',
+    env: { ...process.env, PATH: `${bindir}:${process.env.PATH}`, WTREE_NO_PROC: '1', WTREE_GH: '/nonexistent/gh' },
+  })
+  assert.equal(r.status, 0, r.stderr)
+  const [inWorktree, backInMain] = r.stdout.trim().split('\n')
+  assert.equal(inWorktree.endsWith('proj.worktrees/feat-hook'), true)
+  assert.equal(backInMain.endsWith('proj'), true)
+})
