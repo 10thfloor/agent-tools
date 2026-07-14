@@ -12,6 +12,7 @@ self-contained (own `package.json`, own tests); this repo is the suite.
 | [fleet](fleet/) | `fleet` | Your whole workspace at a glance: every repo's worktrees, PRs, and live agents in one table |
 | [tok](tok/) | `tok` | Know the token cost before you paste: real tokenizer counts, a CI-ready budget gate, and verified-lossless JSON→TOON packing |
 | [bench](bench/) | `bench` | Prove the savings on *your* repos. A/B a baseline command against its wrapped form, count real tokens, gate it in CI |
+| [pe](pe/) | `pe` | Your principal engineer: task in, verified PR out. Headless Claude Code in a guarded worktree; harness-owned gates, sealed review evidence |
 
 ## Examples & benchmarks
 
@@ -122,9 +123,27 @@ section was counted with it). Its `--pack` mode reports itself honestly:
 packing only wins on record-shaped data, and the footer says which case
 you're in.
 
+### pe
+
+```
+$ pe run "add rate limiting to the api"
+pe: stage    creating worktree for pe/mcqk3f2ab
+pe: delegate initial run (max 50 turns)
+pe: deliver  pushing branch and opening PR
+pe: DELIVERED_READY https://github.com/you/repo/pull/42
+```
+
+The suite's capstone: a principal-engineer harness that stages a `wtree`
+worktree, delegates implementation to headless Claude Code, re-runs `tt`
+itself, and delivers the PR via `ght`. The autonomy envelope is code, not
+prompt: an in-session hook blocks pushes, PR commands, and review-memory
+admission; the harness owns delivery. With [Cairn](pe/README.md#the-cairn-attention-gate)
+configured, every PR carries a sealed attention-gate block for blind-review
+pilots (`pe unseal` after review).
+
 ## House style
 
-All seven follow the same contract, so agents (and humans) can predict them:
+All eight follow the same contract, so agents (and humans) can predict them:
 
 1. **TTY → human, pipe → TOON.** Tables and streams for people; compact
    [TOON](https://github.com/toon-format/toon) for agents, automatically.
@@ -149,7 +168,7 @@ snippets for `CLAUDE.md`/`AGENTS.md`.
 
 ## Platforms
 
-All seven tools run on **Linux, macOS, and Windows**; CI runs every tool's
+All eight tools run on **Linux, macOS, and Windows**; CI runs every tool's
 test suite on all three (`.github/workflows/ci.yml`). `npm link` installs
 working command shims on every platform.
 

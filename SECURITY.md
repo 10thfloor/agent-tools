@@ -56,6 +56,14 @@ assumptions that remain your responsibility.
   environment can already run code as you; these are not a new boundary.
 - **Caches.** `tt` caches full test output under `~/.cache/tt`
   (`TT_CACHE_DIR`). If your test output contains secrets, so will the cache.
+- **Autonomous sessions (pe).** `pe run` launches a headless Claude Code
+  session with permissions bypassed inside the task worktree. The PreToolUse
+  hook blocks specific actions (push, PRs, Cairn memory admission, worktree
+  removal, evidence writes), but everything else the session runs, it runs
+  as you. Use pe on repos and tasks you would hand an autonomous agent
+  anyway, and read the PR before merging: that human review is the design,
+  not an optional extra. Evidence transcripts under `~/.pe/evidence` contain
+  the full session, including any secrets your commands print.
 
 ## Reporting
 

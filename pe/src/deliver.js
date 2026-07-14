@@ -43,7 +43,7 @@ export function renderBody({ task, runId, commits, shortstat, tt, cairnBlock }) 
   return lines.filter((l) => l !== null).join('\n') + '\n'
 }
 
-const MERGE_NOTE = 'merge_authorized: false — this gate routes reviewer attention; it never authorizes merge.'
+const MERGE_NOTE = 'merge_authorized: false. This gate routes reviewer attention; it never authorizes merge.'
 
 export function renderCairnBlock({ mode, runId, review }) {
   if (!review?.recorded) return null
@@ -52,7 +52,7 @@ export function renderCairnBlock({ mode, runId, review }) {
     return [
       head,
       '',
-      `sealed for pilot blindness — unseal after review (\`pe unseal ${runId}\`)`,
+      `sealed for pilot blindness; unseal after review (\`pe unseal ${runId}\`)`,
       `evidence: ${review.evidenceHash} · snapshot: pre-human-review · captured: ${review.capturedAt}`,
       '',
       MERGE_NOTE,
