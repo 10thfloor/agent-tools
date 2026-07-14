@@ -4,6 +4,7 @@
 // falls through to `command wtree`.
 
 const POSIX = `# wtree shell integration (bash/zsh): wtree new / wtree cd change directory.
+# The path is still printed, so cd "$(wtree new x)" and scripts keep working.
 wtree() {
   case "$1" in
     new|cd)
@@ -11,7 +12,7 @@ wtree() {
       _sub="$1"; shift
       [ "$_sub" = cd ] && _sub=path
       _dir="$(command wtree "$_sub" "$@")" || return $?
-      [ -n "$_dir" ] && cd "$_dir"
+      [ -n "$_dir" ] && cd "$_dir" && printf '%s\\n' "$_dir"
       ;;
     *) command wtree "$@" ;;
   esac
@@ -27,7 +28,7 @@ function wtree
         set -l dir (command wtree $sub $argv)
         set -l st $status
         test $st -ne 0; and return $st
-        test -n "$dir"; and cd $dir
+        test -n "$dir"; and cd $dir; and echo $dir
     else
         command wtree $argv
     end
@@ -42,7 +43,7 @@ function wtree {
     $sub = if ($args[0] -eq 'cd') { 'path' } else { 'new' }
     $rest = @($args | Select-Object -Skip 1)
     $dir = & $app $sub @rest
-    if ($LASTEXITCODE -eq 0 -and $dir) { Set-Location "$dir" }
+    if ($LASTEXITCODE -eq 0 -and $dir) { Set-Location "$dir"; "$dir" }
   } else {
     & $app @args
   }

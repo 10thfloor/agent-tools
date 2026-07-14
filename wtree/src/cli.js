@@ -28,8 +28,11 @@ working inside it, or git-locked. idle = none of those.
 WORK column = your note (wtree new -m / wtree note), else a summary generated
 from git state ("editing src, test (3 files +42/-7)", "2 commits, last: …").
 List format: table on a terminal, TOON when piped (agents), --json for scripts.
-Auto-cd: add  eval "$(wtree shell-init zsh)"  to your shell rc; then
-wtree new / wtree cd land you in the worktree directly.
+Auto-cd: install the shell hook and wtree new / wtree cd change directory
+in place (the path still prints, so cd "$(wtree new x)" keeps working):
+  bash/zsh:   eval "$(wtree shell-init zsh)"
+  fish:       wtree shell-init fish | source
+  PowerShell: wtree shell-init powershell | Out-String | Invoke-Expression
 
 Env: WTREE_GH (gh binary for PR lookup), WTREE_NO_PROC=1 (skip process detection)
 `
@@ -102,7 +105,9 @@ export function runWtree(argv, env = process.env) {
       case 'cd':
         // Reached only without the hook: a child process can't cd its parent.
         process.stderr.write('wtree: cd needs the shell hook. Add to your shell rc:\n'
-          + '  eval "$(wtree shell-init zsh)"   # or bash | fish | powershell\n'
+          + '  eval "$(wtree shell-init zsh)"                                 # bash/zsh\n'
+          + '  wtree shell-init fish | source                                 # fish\n'
+          + '  wtree shell-init powershell | Out-String | Invoke-Expression   # PowerShell\n'
           + `then restart the shell. (Without it: cd "$(wtree path ${pos[1] ?? '<branch>'})")\n`)
         return 1
       default:

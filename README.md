@@ -162,10 +162,12 @@ Windows specifics:
   blocks spawning those without a shell). `tj vercel …` and friends work.
 - `wtree`'s agent detection uses `lsof` (macOS/Linux only); on Windows that
   one signal is simply absent. Every other column still works.
-- `eval "$(wtree shell-init zsh)"` in your shell rc (bash|zsh|fish|
-  powershell) makes `wtree new`/`wtree cd` change directory directly;
-  without it, `cd "$(wtree new x)"` (bash/zsh) or
-  `Set-Location (wtree new x)` (PowerShell) still work.
+- The `wtree shell-init` hook makes `wtree new`/`wtree cd` change
+  directory directly: `eval "$(wtree shell-init zsh)"` (bash/zsh),
+  `wtree shell-init fish | source` (fish), or
+  `wtree shell-init powershell | Out-String | Invoke-Expression`
+  (PowerShell `$PROFILE`). Without it, `cd "$(wtree new x)"` (bash/zsh)
+  or `Set-Location (wtree new x)` (PowerShell) still work.
 
 ## Security
 

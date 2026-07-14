@@ -351,14 +351,19 @@ test('the bash hook makes wtree new / wtree cd change directory', { skip: !HAS_B
   // A `wtree` on PATH for `command wtree` inside the hook.
   const bindir = mkdtempSync(join(tmpdir(), 'wt-hookbin-'))
   writeFileSync(join(bindir, 'wtree'), `#!/bin/sh\nexec "${process.execPath}" "${BIN}" "$@"\n`, { mode: 0o755 })
-  const script = 'eval "$(wtree shell-init bash)" && wtree new feat/hook && pwd && wtree cd && pwd'
+  // The hook cds AND prints the path, so the hookless agent form
+  // cd "$(wtree new x)" keeps working even with the hook loaded.
+  const script = 'eval "$(wtree shell-init bash)" && wtree new feat/hook >/dev/null && pwd'
+    + ' && wtree cd >/dev/null && pwd'
+    + ' && cd "$(wtree new feat/hook2)" && pwd'
   const r = spawnSync('bash', ['-c', script], {
     cwd: repo,
     encoding: 'utf8',
     env: { ...process.env, PATH: `${bindir}:${process.env.PATH}`, WTREE_NO_PROC: '1', WTREE_GH: '/nonexistent/gh' },
   })
   assert.equal(r.status, 0, r.stderr)
-  const [inWorktree, backInMain] = r.stdout.trim().split('\n')
+  const [inWorktree, backInMain, viaSubst] = r.stdout.trim().split('\n')
   assert.equal(inWorktree.endsWith('proj.worktrees/feat-hook'), true)
   assert.equal(backInMain.endsWith('proj'), true)
+  assert.equal(viaSubst.endsWith('proj.worktrees/feat-hook2'), true)
 })

@@ -32,10 +32,18 @@ cd wtree && npm install && npm link
 ```
 
 Then (recommended) add the one-line shell hook so `wtree new` / `wtree cd`
-land you in the worktree directly, no `cd "$(...)"` needed:
+land you in the worktree directly, no `cd "$(...)"` needed. One line in
+your shell's rc file:
 
 ```sh
-echo 'eval "$(wtree shell-init zsh)"' >> ~/.zshrc   # or bash | fish | powershell
+# ~/.zshrc or ~/.bashrc
+eval "$(wtree shell-init zsh)"        # bash users: shell-init bash
+
+# ~/.config/fish/config.fish
+wtree shell-init fish | source
+
+# PowerShell $PROFILE
+wtree shell-init powershell | Out-String | Invoke-Expression
 ```
 
 Requires Node >= 22 and git. Optional: `gh` (authenticated) for the PR

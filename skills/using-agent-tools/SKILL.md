@@ -35,7 +35,10 @@ a `name[N]{fields}:` header plus one comma-separated row per item);
 ## Worktree habits
 
 Don't work directly on main: `cd "$(wtree new -m "<one-line intent>")"`
-(branch name optional: wtree generates wtree-1, wtree-2, …). Record progress with
+(branch name optional: wtree generates wtree-1, wtree-2, …). This form works
+with or without the user's `wtree shell-init` hook loaded; the hook also
+prints the path. `cd "$(wtree path)"` returns to the main worktree;
+`wtree path <branch>` locates any worktree. Record progress with
 `wtree note "<update>"`. `wtree clean --yes` removes only idle worktrees;
 `wtree rm` refuses dirty work without `--force`.
 
