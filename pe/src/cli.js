@@ -5,6 +5,7 @@ import { loadConfig, UsageError } from './config.js'
 import { evidencePaths, latestPath } from './evidence.js'
 import { runPipeline, runRevise, exitCodeFor } from './run.js'
 import { unseal } from './cairn.js'
+import { runDoctor } from './doctor.js'
 import { sh } from './exec.js'
 
 export const USAGE = `pe: principal-engineer harness wrapping headless Claude Code
@@ -21,6 +22,9 @@ Usage:
   pe unseal <run-id> [--repo <path>] [--outcome strong|partial]
             [--findings <n>] [--changes-requested]
       pilot: reveal the sealed Cairn record (once) and log the human outcome
+  pe doctor [--repo <path>]
+      preflight every dependency (claude, wtree, tt, ght, git, gh auth,
+      cairn, evidence dir); exit 1 if anything would break a run
 
 Exit codes: 0 delivered, 1 gates failed / aborted, 2 usage or environment
 error. Gate mode mirrors cairn --gate: 3 = delivered but HUMAN_REQUIRED.
@@ -166,6 +170,19 @@ export async function runPe(argv) {
       process.stdout.write(sealed + '\n')
       err(`pe: unsealed ${pos[1]}; outcome logged to ${paths.outcome}`)
       return 0
+    }
+    if (cmd === 'doctor') {
+      const rows = runDoctor({ repo, cfg })
+      if (process.stdout.isTTY) {
+        for (const r of rows) {
+          process.stdout.write(`${r.status === 'ok' ? '✓' : '✗'} ${r.check.padEnd(24)} ${r.detail}\n`)
+        }
+      } else {
+        process.stdout.write(encode(rows, { delimiter: ',' }) + '\n')
+      }
+      const failed = rows.filter((r) => r.status === 'fail').length
+      err(failed ? `pe: ${failed} check(s) failed` : 'pe: environment ready')
+      return failed ? 1 : 0
     }
     throw new UsageError(`pe: unknown command '${cmd}'`)
   } catch (e) {

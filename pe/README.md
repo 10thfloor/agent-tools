@@ -43,6 +43,7 @@ Requires Node >= 22, git, and the `claude` CLI. The sibling tools `wtree`,
 | `pe revise [run-id]` | after human review: fetch the PR feedback via `ght`, address it in the same worktree, push the same branch (updates the PR) |
 | `pe report [run-id]` | re-print a past run's verdict and artifact paths (default: latest) |
 | `pe unseal <run-id> [--outcome strong\|partial] [--findings <n>] [--changes-requested]` | pilot: reveal the sealed Cairn record (exactly once) and log the human outcome |
+| `pe doctor` | preflight every dependency (claude, wtree, tt, ght, git, gh auth, cairn, evidence dir); exit 1 if anything would break a run |
 
 Exit codes: `0` delivered, `1` gates failed or run aborted, `2` usage or
 environment error. In Cairn gate mode, `3` means delivered but

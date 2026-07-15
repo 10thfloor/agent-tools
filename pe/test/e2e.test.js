@@ -44,6 +44,10 @@ import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 const state = process.env.PE_FAKE_STATE
 const args = process.argv.slice(2)
+if (args.includes('--version')) {
+  process.stdout.write('fake-claude 1.0.0\\n')
+  process.exit(0)
+}
 const prompt = args[args.indexOf('-p') + 1] ?? ''
 appendFileSync(join(state, 'claude.calls'), JSON.stringify({ prompt, cwd: process.cwd() }) + '\\n')
 const calls = readFileSync(join(state, 'claude.calls'), 'utf8').trim().split('\\n').length
@@ -410,6 +414,22 @@ test('revise guards: no feedback and no PR are usage errors', () => {
   const noPr = pe(['revise', failed.run], sb)
   assert.equal(noPr.status, 2)
   assert.match(noPr.stderr, /no PR to revise/)
+})
+
+test('doctor: green sandbox passes; a broken dependency fails with exit 1', () => {
+  const sb = makeSandbox()
+  const ok = pe(['doctor'], sb)
+  assert.equal(ok.status, 0, ok.stdout + ok.stderr)
+  const rows = decode(ok.stdout)
+  assert.equal(rows.every((r) => r.status === 'ok'), true)
+  assert.equal(rows.some((r) => r.check.startsWith('cairn')), true)
+  assert.match(ok.stderr, /environment ready/)
+  // doctor probes must not pollute run accounting
+  assert.equal(claudeCalls(sb).length, 0)
+
+  const broken = pe(['doctor'], sb, { PE_CLAUDE: '/nonexistent/claude' })
+  assert.equal(broken.status, 1)
+  assert.equal(decode(broken.stdout).find((r) => r.check === 'claude').status, 'fail')
 })
 
 test('report re-prints the latest verdict', () => {
