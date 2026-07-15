@@ -62,11 +62,40 @@ export function buildPrompt({ task, cairn }) {
   return lines.join('\n') + '\n'
 }
 
+const RULES = 'The same rules apply: no pushing, no pull requests; delivery is handled outside this session.'
+
 export function remediationPrompt(reason, detail) {
   return [
     'The harness verified your previous attempt and it is not deliverable yet.',
     `Problem: ${reason}`,
     detail ? `Evidence:\n${detail}` : '',
-    'Fix it and commit. The same rules apply: no pushing, no pull requests.',
+    `Fix it and commit. ${RULES}`,
   ].filter(Boolean).join('\n') + '\n'
+}
+
+export function revisePrompt(task, feedback) {
+  return [
+    'The human reviewer examined your delivered pull request and left feedback.',
+    'Address every point, keep the tests green, and commit your work.',
+    '',
+    `ORIGINAL TASK: ${task}`,
+    '',
+    'REVIEW FEEDBACK:',
+    ...feedback.map((f) => `- ${f}`),
+    '',
+    RULES,
+  ].join('\n') + '\n'
+}
+
+export function resumePrompt(task, message) {
+  return [
+    'You are resuming an interrupted delivery in this worktree. A previous',
+    'session did not finish; pick up where it left off.',
+    '',
+    `ORIGINAL TASK: ${task}`,
+    '',
+    `WHERE IT STOPPED:\n${message || 'the session ran out of budget.'}`,
+    '',
+    `Make the tests green with \`tt\` and commit everything. ${RULES}`,
+  ].join('\n') + '\n'
 }

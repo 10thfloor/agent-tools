@@ -387,9 +387,11 @@ test('revise: fetches PR feedback, re-delegates in the same worktree, pushes the
   assert.equal(first.state, 'DELIVERED_READY')
   const before = sh('git', ['rev-parse', `refs/heads/${first.branch}`], join(sb.dir, 'origin.git')).trim()
 
+  // ght's pruning can collapse author objects to plain login strings; the
+  // comment uses that shape deliberately.
   writeFileSync(join(sb.state, 'ght-pr.json'), JSON.stringify({
     reviews: [{ author: { login: 'mk' }, state: 'CHANGES_REQUESTED', body: 'Rename greeting to salutation' }],
-    comments: [{ author: { login: 'mk' }, body: 'Also add a test for the empty case' }],
+    comments: [{ author: 'mk', body: 'Also add a test for the empty case' }],
   }))
   const rv = pe(['revise', first.run], sb)
   assert.equal(rv.status, 0, rv.stderr)
@@ -400,8 +402,8 @@ test('revise: fetches PR feedback, re-delegates in the same worktree, pushes the
   // the delegated prompt carried the feedback
   const last = claudeCalls(sb).at(-1).prompt
   assert.match(last, /Rename greeting to salutation/)
-  assert.match(last, /empty case/)
   assert.match(last, /CHANGES_REQUESTED/)
+  assert.match(last, /mk: Also add a test for the empty case/) // string author kept, not 'reviewer'
 
   // the same branch advanced on origin; no second PR was created
   const after = sh('git', ['rev-parse', `refs/heads/${first.branch}`], join(sb.dir, 'origin.git')).trim()
@@ -546,6 +548,7 @@ test('status lists runs newest first with state, PR, and liveness', () => {
   assert.equal(rows[1].run, good.run)
   assert.equal(rows[1].state, 'DELIVERED_READY')
   assert.equal(rows[1].pr, 'https://github.com/fake/proj/pull/7')
+  assert.match(rows[0].when, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/) // decoded from the run id
 })
 
 test('report re-prints the latest verdict', () => {

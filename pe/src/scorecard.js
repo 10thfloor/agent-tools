@@ -21,8 +21,7 @@ export function scorecard(evidenceDir, repo) {
     if (r.sealed) sealed++
     if (r.outcome) {
       unsealed++
-      if (r.outcome.outcome === 'strong') outcomes.strong++
-      if (r.outcome.outcome === 'partial') outcomes.partial++
+      if (Object.hasOwn(outcomes, r.outcome.outcome)) outcomes[r.outcome.outcome]++
       if (r.outcome.changes_requested) changesRequested++
     }
   }

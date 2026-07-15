@@ -7,12 +7,13 @@ export function push({ git, wt, branch }) {
   return r.status === 0 ? null : (r.stderr || `git push exited ${r.status}`)
 }
 
+export const prNumber = (url) => Number((String(url ?? '').match(/\/pull\/(\d+)/) ?? [])[1]) || null
+
 export function createPr({ ght, wt, title, bodyPath, base }) {
   const r = sh(ght, ['pr', 'create', '--draft', '--title', title, '--base', base, '--body-file', bodyPath], { cwd: wt })
   if (r.status !== 0) return { error: r.stderr || `pr create exited ${r.status}` }
   const url = (r.stdout.match(/https?:\/\/\S+/) ?? [''])[0]
-  const number = Number((url.match(/\/pull\/(\d+)/) ?? [])[1] ?? 0) || null
-  return { url: url || null, number }
+  return { url: url || null, number: prNumber(url) }
 }
 
 export function readyPr({ ght, wt, number, url }) {

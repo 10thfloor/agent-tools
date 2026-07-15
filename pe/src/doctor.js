@@ -26,14 +26,32 @@ export function runDoctor({ repo, cfg }) {
   })
   check('git', () => probe(cfg.bins.git, ['--version']))
   check('claude', () => probe(cfg.bins.claude, ['--version']))
-  check('wtree', () => probe(cfg.bins.wtree, ['--help']) && 'on PATH')
-  check('tt', () => probe(cfg.bins.tt, ['--tt-help']) && 'on PATH')
-  check('ght', () => (probe(cfg.bins.ght, ['--ght-help']), 'on PATH'))
-  check('git repo', () => (probe(cfg.bins.git, ['-C', repo, 'rev-parse', '--git-dir']), repo))
+  check('wtree', () => {
+    probe(cfg.bins.wtree, ['--help'])
+    return 'on PATH'
+  })
+  check('tt', () => {
+    probe(cfg.bins.tt, ['--tt-help'])
+    return 'on PATH'
+  })
+  check('ght', () => {
+    probe(cfg.bins.ght, ['--ght-help'])
+    return 'on PATH'
+  })
+  check('git repo', () => {
+    probe(cfg.bins.git, ['-C', repo, 'rev-parse', '--git-dir'])
+    return repo
+  })
   check('origin remote', () => probe(cfg.bins.git, ['-C', repo, 'remote', 'get-url', 'origin']))
-  check('gh auth', () => (probe(cfg.bins.ght, ['auth', 'status']), 'authenticated'))
+  check('gh auth', () => {
+    probe(cfg.bins.ght, ['auth', 'status'])
+    return 'authenticated'
+  })
   if (cfg.cairn) {
-    check(`cairn (${cfg.cairn.mode})`, () => (probe(cfg.cairn.bin, ['capabilities', '--format', 'json']), 'responds'))
+    check(`cairn (${cfg.cairn.mode})`, () => {
+      probe(cfg.cairn.bin, ['capabilities', '--format', 'json'])
+      return 'responds'
+    })
   }
   check('evidence dir writable', () => {
     mkdirSync(cfg.evidenceDir, { recursive: true })

@@ -93,6 +93,15 @@ function emit(data) {
   }
 }
 
+// Row-list sibling of emit: aligned lines on a TTY, TOON rows piped.
+function emitRows(rows, renderRow) {
+  if (process.stdout.isTTY) {
+    for (const r of rows) process.stdout.write(renderRow(r) + '\n')
+  } else {
+    process.stdout.write(encode(rows, { delimiter: ',' }) + '\n')
+  }
+}
+
 function verdictOf(result) {
   return {
     run: result.runId,
@@ -190,22 +199,16 @@ export async function runPe(argv) {
       return 0
     }
     if (cmd === 'status') {
-      const rows = readRuns(cfg.evidenceDir, repo).slice(0, 20).map((r) => ({
+      const rows = readRuns(cfg.evidenceDir, repo, { limit: 20, journal: false }).map((r) => ({
         run: r.runId,
         state: r.verdict?.state ?? 'UNKNOWN',
         branch: r.verdict?.branch ?? '',
         pr: r.verdict?.pr ?? '',
         live: Boolean(r.verdict?.worktree && existsSync(r.verdict.worktree)),
         unsealed: Boolean(r.outcome),
-        when: new Date(parseInt(r.runId.slice(3, -3), 36)).toISOString().slice(0, 16),
+        when: r.createdAt,
       }))
-      if (process.stdout.isTTY) {
-        for (const r of rows) {
-          process.stdout.write(`${r.when}  ${r.state.padEnd(16)} ${r.run}  ${r.branch}  ${r.pr}\n`)
-        }
-      } else {
-        process.stdout.write(encode(rows, { delimiter: ',' }) + '\n')
-      }
+      emitRows(rows, (r) => `${r.when}  ${r.state.padEnd(16)} ${r.run}  ${r.branch}  ${r.pr}`)
       err(`pe: ${rows.length} run(s)`)
       return 0
     }
@@ -215,13 +218,7 @@ export async function runPe(argv) {
     }
     if (cmd === 'doctor') {
       const rows = runDoctor({ repo, cfg })
-      if (process.stdout.isTTY) {
-        for (const r of rows) {
-          process.stdout.write(`${r.status === 'ok' ? '✓' : '✗'} ${r.check.padEnd(24)} ${r.detail}\n`)
-        }
-      } else {
-        process.stdout.write(encode(rows, { delimiter: ',' }) + '\n')
-      }
+      emitRows(rows, (r) => `${r.status === 'ok' ? '✓' : '✗'} ${r.check.padEnd(24)} ${r.detail}`)
       const failed = rows.filter((r) => r.status === 'fail').length
       err(failed ? `pe: ${failed} check(s) failed` : 'pe: environment ready')
       return failed ? 1 : 0

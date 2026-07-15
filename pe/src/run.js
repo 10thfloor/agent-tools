@@ -1,10 +1,10 @@
-import { appendFileSync, existsSync, writeFileSync } from 'node:fs'
+import { existsSync, writeFileSync, appendFileSync } from 'node:fs'
 import { sh } from './exec.js'
 import { evidencePaths, initEvidence, journal } from './evidence.js'
-import { writeWorktreeSettings, buildPrompt, remediationPrompt } from './settings.js'
+import { writeWorktreeSettings, buildPrompt, remediationPrompt, revisePrompt, resumePrompt } from './settings.js'
 import { delegate, usageOf } from './claude.js'
 import { reviewAndSeal } from './cairn.js'
-import { push, createPr, readyPr, renderBody, renderCairnBlock } from './deliver.js'
+import { push, createPr, readyPr, renderBody, renderCairnBlock, prNumber } from './deliver.js'
 import { scanDiff } from './secrets.js'
 import { UsageError } from './config.js'
 
@@ -16,7 +16,7 @@ function makeCtx({ repo, cfg, flags, log, runId, task, branch, base, paths, wt }
   const started = Date.now()
   const ctx = {
     repo, cfg, flags, log, runId, task, branch, base, paths, wt, totals,
-    review: { current: null },
+    review: null,
     git: (args) => sh(cfg.bins.git, ['-C', wt, ...args]),
     finish: (state, extra = {}) => ({
       state, runId, task, branch, paths, totals, worktree: wt, base,
@@ -55,35 +55,51 @@ function makeCtx({ repo, cfg, flags, log, runId, task, branch, base, paths, wt }
   }
 
   // Gates in order: committed tree → real commits → tt green → (gate mode)
-  // Cairn not BLOCKED. Each failure carries the remediation evidence. The
-  // Cairn record is sealed on every pass that reaches it; in shadow mode the
-  // returned view has no status, so it can never fail this gate (or leak).
+  // Cairn not BLOCKED. Each failure carries its remediation evidence and a
+  // composed message. The Cairn record is sealed on every pass that reaches
+  // it; in shadow mode the returned view has no status, so it can never fail
+  // this gate (or leak).
   ctx.verify = ({ cairn = true } = {}) => {
+    const bad = (gate, reason, detail, tt) =>
+      ({ ok: false, gate, reason, detail, tt, message: `${reason}${detail ? `\n${detail}` : ''}` })
     const dirty = (ctx.git(['status', '--porcelain']).stdout || '')
       .split('\n').filter((l) => l.trim() && !/\.claude([\\/]|$)/.test(l))
-    if (dirty.length) return { ok: false, gate: 'work', reason: 'uncommitted work in the tree', detail: dirty.join('\n') }
+    if (dirty.length) return bad('work', 'uncommitted work in the tree', dirty.join('\n'))
     const count = Number((ctx.git(['rev-list', '--count', `${base}..HEAD`]).stdout || '0').trim())
-    if (!count) return { ok: false, gate: 'work', reason: 'no commits on the branch', detail: '' }
+    if (!count) return bad('work', 'no commits on the branch', '')
     const tt = sh(cfg.bins.tt, ['--tt-json'], { cwd: wt })
     let verdict = null
     try { verdict = JSON.parse(tt.stdout) } catch { /* fall through */ }
     const summary = verdict?.summary ?? { failed: null, passed: null }
     if (tt.status !== 0) {
       const rows = (verdict?.failures ?? []).map((f) => `${f.n ?? '?'}: ${f.head ?? ''} ${f.detail ?? ''}`.trim())
-      return { ok: false, gate: 'tests', reason: 'tests failing', detail: rows.join('\n') || (tt.stderr || '').trim(), tt: summary }
+      return bad('tests', 'tests failing', rows.join('\n') || (tt.stderr || '').trim(), summary)
     }
     if (cairn && cfg.cairn) {
       log('verify   recording Cairn review')
-      ctx.review.current = reviewAndSeal({ cairn: cfg.cairn, repo: wt, branch, base, sealedPath: paths.sealed })
-      journal(paths, 'cairn.recorded', { recorded: ctx.review.current.recorded, mode: cfg.cairn.mode })
-      if (ctx.review.current.status === 'BLOCKED') {
-        return { ok: false, gate: 'cairn', reason: 'the review gate BLOCKED this change', detail: ctx.review.current.findings.join('\n'), tt: summary }
+      ctx.review = reviewAndSeal({ cairn: cfg.cairn, repo: wt, branch, base, sealedPath: paths.sealed })
+      journal(paths, 'cairn.recorded', { recorded: ctx.review.recorded, mode: cfg.cairn.mode })
+      if (ctx.review.status === 'BLOCKED') {
+        return bad('cairn', 'the review gate BLOCKED this change', ctx.review.findings.join('\n'), summary)
       }
     }
     return { ok: true, tt: summary }
   }
 
   return ctx
+}
+
+// Rehydrate a context from a recorded verdict (revise, resume).
+function continuationCtx({ repo, cfg, flags, log, runId, verdict }) {
+  if (!verdict.worktree || !existsSync(verdict.worktree)) {
+    throw new UsageError(`pe: worktree for '${runId}' is gone`)
+  }
+  const paths = evidencePaths(cfg.evidenceDir, repo, runId)
+  const base = flags.base ?? verdict.base ?? cfg.cairn?.base ?? 'main'
+  return makeCtx({
+    repo, cfg, flags, log, runId, task: verdict.task, branch: verdict.branch,
+    base, paths, wt: verdict.worktree,
+  })
 }
 
 // Initial delegation plus the budgeted remediation loop. Returns
@@ -101,6 +117,15 @@ async function verifyLoop(ctx, firstPrompt, label, verifyOpts = {}) {
     journal(ctx.paths, 'verify.done', { ok: v.ok, gate: v.gate ?? null, tt: v.tt ?? null, remediation: true })
   }
   return { v }
+}
+
+// The delegate → verify → deliver spine shared by run and resume.
+async function delegateThenDeliver(ctx, prompt, label) {
+  const { fail, v } = await verifyLoop(ctx, prompt, label)
+  if (fail) return fail
+  if (!v.ok && v.gate !== 'cairn') return ctx.finish('FAILED_TESTS', { tt: v.tt, message: v.message })
+  // Only the Cairn gate can remain failing here; it still delivers, as a draft.
+  return deliverStage(ctx, v, { gateBlocked: !v.ok })
 }
 
 // The secret gate plus the push itself. Returns null on success, a terminal
@@ -129,10 +154,9 @@ function deliverStage(ctx, v, { gateBlocked }) {
 
   const commits = (git(['log', '--reverse', '--format=%s', `${ctx.base}..HEAD`]).stdout || '').trim().split('\n').filter(Boolean)
   const shortstat = (git(['diff', '--shortstat', `${ctx.base}...HEAD`]).stdout || '').trim()
-  const review = ctx.review.current
   const body = renderBody({
     task: ctx.task, runId: ctx.runId, commits, shortstat, tt: v.tt,
-    cairnBlock: renderCairnBlock({ mode: cfg.cairn?.mode, runId: ctx.runId, review }),
+    cairnBlock: renderCairnBlock({ mode: cfg.cairn?.mode, runId: ctx.runId, review: ctx.review }),
   })
   writeFileSync(paths.prBody, body)
   const pr = createPr({ ght: cfg.bins.ght, wt: ctx.wt, title: ctx.task.slice(0, 72), bodyPath: paths.prBody, base: ctx.base })
@@ -145,7 +169,7 @@ function deliverStage(ctx, v, { gateBlocked }) {
     if (readyErr) return ctx.finish('ERROR', { tt: v.tt, pr, message: `pr ready failed: ${readyErr.trim()}` })
   }
   const state = gateBlocked ? 'BLOCKED_CAIRN' : wantReady ? 'DELIVERED_READY' : 'DELIVERED_DRAFT'
-  return ctx.finish(state, { tt: v.tt, pr, review, humanRequired: review?.status === 'HUMAN_REQUIRED' })
+  return ctx.finish(state, { tt: v.tt, pr, review: ctx.review, humanRequired: ctx.review?.status === 'HUMAN_REQUIRED' })
 }
 
 // ---- pe run ---------------------------------------------------------------
@@ -171,13 +195,7 @@ export async function runPipeline({ repo, task, flags, cfg, log }) {
   journal(paths, 'stage.done', { worktree: wt })
 
   const ctx = makeCtx({ repo, cfg, flags, log, runId, task, branch, base, paths, wt })
-  const { fail, v } = await verifyLoop(ctx, buildPrompt({ task, cairn: cfg.cairn }), 'initial')
-  if (fail) return fail
-  if (!v.ok && v.gate !== 'cairn') {
-    return ctx.finish('FAILED_TESTS', { tt: v.tt, message: `${v.reason}${v.detail ? `\n${v.detail}` : ''}` })
-  }
-  // Only the Cairn gate can remain failing here; it still delivers, as a draft.
-  return deliverStage(ctx, v, { gateBlocked: !v.ok })
+  return delegateThenDeliver(ctx, buildPrompt({ task, cairn: cfg.cairn }), 'initial')
 }
 
 // ---- pe revise ------------------------------------------------------------
@@ -186,50 +204,31 @@ export async function runPipeline({ repo, task, flags, cfg, log }) {
 // the sealed record documents the diff the human reviewed.
 export async function runRevise({ repo, runId, verdict, flags, cfg, log }) {
   if (!verdict.pr) throw new UsageError(`pe: run '${runId}' has no PR to revise (state: ${verdict.state})`)
-  if (!verdict.worktree || !existsSync(verdict.worktree)) {
-    throw new UsageError(`pe: worktree for '${runId}' is gone; cannot revise`)
-  }
-  const paths = evidencePaths(cfg.evidenceDir, repo, runId)
-  const base = flags.base ?? verdict.base ?? cfg.cairn?.base ?? 'main'
-  const ctx = makeCtx({
-    repo, cfg, flags, log, runId, task: verdict.task, branch: verdict.branch,
-    base, paths, wt: verdict.worktree,
-  })
+  const ctx = continuationCtx({ repo, cfg, flags, log, runId, verdict })
 
-  const number = Number((String(verdict.pr).match(/\/pull\/(\d+)/) ?? [])[1] ?? 0) || null
   log('revise   fetching PR review feedback')
+  const number = prNumber(verdict.pr)
   const r = sh(cfg.bins.ght, ['pr', 'view', String(number ?? verdict.pr), '--json', 'reviews,comments', '--ght-json'], { cwd: ctx.wt })
   if (r.status !== 0) throw new Error(`could not fetch PR feedback: ${(r.stderr || '').trim()}`)
   let data = {}
   try { data = JSON.parse(r.stdout) } catch { /* handled below */ }
+  // ght's pruning may have collapsed author objects to plain login strings.
+  const authorOf = (a) => (typeof a === 'string' ? a : a?.login) ?? 'reviewer'
   const feedback = [
-    ...(data.reviews ?? []).map((x) => `${x.author?.login ?? 'reviewer'} (${x.state ?? 'REVIEW'}): ${x.body ?? ''}`),
-    ...(data.comments ?? []).map((x) => `${x.author?.login ?? 'commenter'}: ${x.body ?? ''}`),
-  ].filter((line) => line.split(': ').slice(1).join(': ').trim())
+    ...(data.reviews ?? []).filter((x) => x.body?.trim())
+      .map((x) => `${authorOf(x.author)} (${x.state ?? 'REVIEW'}): ${x.body}`),
+    ...(data.comments ?? []).filter((x) => x.body?.trim())
+      .map((x) => `${authorOf(x.author)}: ${x.body}`),
+  ]
   if (!feedback.length) throw new UsageError(`pe: no review feedback found on ${verdict.pr}`)
-  journal(paths, 'revise.start', { pr: verdict.pr, feedback: feedback.length })
+  journal(ctx.paths, 'revise.start', { pr: verdict.pr, feedback: feedback.length })
 
-  const prompt = [
-    'The human reviewer examined your delivered pull request and left feedback.',
-    'Address every point, keep the tests green, and commit your work.',
-    '',
-    `ORIGINAL TASK: ${ctx.task}`,
-    '',
-    'REVIEW FEEDBACK:',
-    ...feedback.map((f) => `- ${f}`),
-    '',
-    'The same rules apply: no pushing, no pull requests; delivery is handled',
-    'outside this session.',
-  ].join('\n') + '\n'
-
-  const { fail, v } = await verifyLoop(ctx, prompt, 'revise', { cairn: false })
+  const { fail, v } = await verifyLoop(ctx, revisePrompt(ctx.task, feedback), 'revise', { cairn: false })
   if (fail) return fail
-  if (!v.ok) {
-    return ctx.finish('FAILED_TESTS', { tt: v.tt, message: `${v.reason}${v.detail ? `\n${v.detail}` : ''}` })
-  }
+  if (!v.ok) return ctx.finish('FAILED_TESTS', { tt: v.tt, message: v.message })
   const pushFail = guardedPush(ctx, v)
   if (pushFail) return pushFail
-  journal(paths, 'revise.pushed', {})
+  journal(ctx.paths, 'revise.pushed', {})
 
   if (cfg.cairn) {
     log('to teach Cairn from this correction (you confirm; the agent never can):')
@@ -245,35 +244,9 @@ export async function runResume({ repo, runId, verdict, flags, cfg, log }) {
   if (!['FAILED_TESTS', 'ABORTED_BUDGET'].includes(verdict.state)) {
     throw new UsageError(`pe: run '${runId}' is ${verdict.state}; resume only continues FAILED_TESTS or ABORTED_BUDGET runs`)
   }
-  if (!verdict.worktree || !existsSync(verdict.worktree)) {
-    throw new UsageError(`pe: worktree for '${runId}' is gone; cannot resume`)
-  }
-  const paths = evidencePaths(cfg.evidenceDir, repo, runId)
-  const base = flags.base ?? verdict.base ?? cfg.cairn?.base ?? 'main'
-  const ctx = makeCtx({
-    repo, cfg, flags, log, runId, task: verdict.task, branch: verdict.branch,
-    base, paths, wt: verdict.worktree,
-  })
-  journal(paths, 'resume.start', { from: verdict.state })
-
-  const prompt = [
-    'You are resuming an interrupted delivery in this worktree. A previous',
-    'session did not finish; pick up where it left off.',
-    '',
-    `ORIGINAL TASK: ${ctx.task}`,
-    '',
-    `WHERE IT STOPPED:\n${verdict.message || 'the session ran out of budget.'}`,
-    '',
-    'Make the tests green with `tt` and commit everything. Do not push and',
-    'do not open pull requests; delivery is handled outside this session.',
-  ].join('\n') + '\n'
-
-  const { fail, v } = await verifyLoop(ctx, prompt, 'resume')
-  if (fail) return fail
-  if (!v.ok && v.gate !== 'cairn') {
-    return ctx.finish('FAILED_TESTS', { tt: v.tt, message: `${v.reason}${v.detail ? `\n${v.detail}` : ''}` })
-  }
-  return deliverStage(ctx, v, { gateBlocked: !v.ok })
+  const ctx = continuationCtx({ repo, cfg, flags, log, runId, verdict })
+  journal(ctx.paths, 'resume.start', { from: verdict.state })
+  return delegateThenDeliver(ctx, resumePrompt(ctx.task, verdict.message), 'resume')
 }
 
 export function exitCodeFor(result) {
