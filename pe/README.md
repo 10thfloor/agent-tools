@@ -141,12 +141,18 @@ and run it yourself.
   "budgets": { "maxTurns": 50, "timeoutMin": 30 },
   "retries": { "verify": 1 },
   "pr": { "readyOnGreen": true },
-  "evidence": { "dir": "~/.pe/evidence" }
+  "evidence": { "dir": "~/.pe/evidence" },
+  "notify": false
 }
 ```
 
+`notify: true` (or `--notify` per run) fires a desktop notification on the
+terminal state: macOS `osascript`, Linux `notify-send`, silent degradation
+elsewhere. Runs take minutes; no need to babysit the terminal.
+
 Env overrides (also the testing seam): `PE_CLAUDE`, `PE_WTREE`, `PE_TT`,
-`PE_GHT`, `PE_GIT`, `PE_CAIRN`, `PE_EVIDENCE_DIR`.
+`PE_GHT`, `PE_GIT`, `PE_CAIRN`, `PE_EVIDENCE_DIR`, `PE_NOTIFY` (notifier
+override, invoked as `<bin> <state> <message>`).
 
 ## Evidence
 

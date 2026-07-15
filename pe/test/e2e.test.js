@@ -141,6 +141,14 @@ const envelope = {
 process.stdout.write(JSON.stringify(envelope) + '\\n')
 `)
 
+  // fake desktop notifier: logs its argv (wired only when a test sets PE_NOTIFY).
+  const notifyBin = join(state, 'notify.mjs')
+  writeFileSync(notifyBin, `
+import { appendFileSync } from 'node:fs'
+import { join } from 'node:path'
+appendFileSync(join(process.env.PE_FAKE_STATE, 'notify.log'), JSON.stringify(process.argv.slice(2)) + '\\n')
+`)
+
   writeFileSync(join(state, 'claude.json'), JSON.stringify({ script: 'happy' }))
   writeFileSync(join(state, 'cairn.json'), JSON.stringify({ status: 'PASS' }))
   writeFileSync(join(repo, 'pe.json'), JSON.stringify({
@@ -152,7 +160,7 @@ process.stdout.write(JSON.stringify(envelope) + '\\n')
   sh('git', ['commit', '-m', 'add pe config'], repo)
   sh('git', ['push'], repo)
 
-  return { dir, repo, state, evidence, bins: { claude, tt, ght, cairn } }
+  return { dir, repo, state, evidence, bins: { claude, tt, ght, cairn, notify: notifyBin } }
 }
 
 function pe(args, sb, env = {}) {
@@ -506,6 +514,22 @@ test('scorecard aggregates run states, spend, and the pilot pairing', () => {
   assert.equal(sc.pilot.unsealed, 1)
   assert.equal(sc.pilot.awaitingUnseal, 0)
   assert.equal(sc.pilot.outcomes.strong, 1)
+})
+
+test('notifications fire on terminal states when enabled, stay silent otherwise', () => {
+  const sb = makeSandbox({ peJson: { notify: true } })
+  pe(['run', 'ping me'], sb, { PE_NOTIFY: sb.bins.notify })
+  const log = readFileSync(join(sb.state, 'notify.log'), 'utf8').trim().split('\n').map((l) => JSON.parse(l))
+  assert.equal(log.length, 1)
+  assert.equal(log[0][0], 'DELIVERED_READY')
+  assert.match(log[0][1], /ping me/)
+
+  const quiet = makeSandbox()
+  pe(['run', 'hush'], quiet, { PE_NOTIFY: quiet.bins.notify })
+  assert.equal(existsSync(join(quiet.state, 'notify.log')), false)
+  // ...unless asked per run with --notify
+  pe(['run', '--notify', 'loud'], quiet, { PE_NOTIFY: quiet.bins.notify })
+  assert.match(readFileSync(join(quiet.state, 'notify.log'), 'utf8'), /loud/)
 })
 
 test('status lists runs newest first with state, PR, and liveness', () => {

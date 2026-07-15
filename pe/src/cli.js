@@ -8,6 +8,7 @@ import { unseal } from './cairn.js'
 import { runDoctor } from './doctor.js'
 import { scorecard } from './scorecard.js'
 import { readRuns } from './runs.js'
+import { notify } from './notify.js'
 import { sh } from './exec.js'
 
 export const USAGE = `pe: principal-engineer harness wrapping headless Claude Code
@@ -40,8 +41,10 @@ Exit codes: 0 delivered, 1 gates failed / aborted, 2 usage or environment
 error. Gate mode mirrors cairn --gate: 3 = delivered but HUMAN_REQUIRED.
 
 Config: pe.json at the repo root (cairn{bin,mode,base}, budgets{maxTurns,
-timeoutMin}, retries{verify}, pr{readyOnGreen}, evidence{dir}).
-Env: PE_CLAUDE, PE_WTREE, PE_TT, PE_GHT, PE_GIT, PE_CAIRN, PE_EVIDENCE_DIR.
+timeoutMin}, retries{verify}, pr{readyOnGreen}, evidence{dir}, notify).
+--notify (or notify: true) fires a desktop notification on terminal states.
+Env: PE_CLAUDE, PE_WTREE, PE_TT, PE_GHT, PE_GIT, PE_CAIRN, PE_EVIDENCE_DIR,
+PE_NOTIFY (notifier override).
 `
 
 export function parseArgv(argv) {
@@ -51,6 +54,7 @@ export function parseArgv(argv) {
     const a = argv[i]
     if (a === '--help' || a === '-h') flags.help = true
     else if (a === '--draft-only') flags.draftOnly = true
+    else if (a === '--notify') flags.notify = true
     else if (a === '--changes-requested') flags.changesRequested = true
     else if (a.startsWith('--repo=')) flags.repo = a.slice(7)
     else if (a === '--repo') flags.repo = argv[++i]
@@ -108,12 +112,15 @@ function verdictOf(result) {
 }
 
 // Shared tail of every pipeline-driving command: persist the verdict, mark
-// the worktree, narrate, emit, map the exit code.
-function finishCommand(result, cfg, repo) {
+// the worktree, notify, narrate, emit, map the exit code.
+function finishCommand(result, cfg, repo, flags) {
   const verdict = verdictOf(result)
   writeFileSync(result.paths.verdict, JSON.stringify(verdict, null, 2))
   if (result.worktree) {
     sh(cfg.bins.wtree, ['note', result.branch, `pe: ${result.state}`], { cwd: repo })
+  }
+  if (cfg.notify || flags.notify) {
+    notify(result.state, `${result.task ?? ''} ${result.pr?.url ?? ''}`.trim() || result.state)
   }
   err(`pe: ${result.state}${result.pr?.url ? ` ${result.pr.url}` : ''}${result.message ? ` (${result.message.split('\n')[0]})` : ''}`)
   emit(verdict)
@@ -158,7 +165,7 @@ export async function runPe(argv) {
       const task = pos.slice(1).join(' ').trim()
       if (!task) throw new UsageError('pe: a task is required: pe run "<task>"')
       const result = await runPipeline({ repo, task, flags, cfg, log: (s) => err(`pe: ${s}`) })
-      return finishCommand(result, cfg, repo)
+      return finishCommand(result, cfg, repo, flags)
     }
     if (cmd === 'revise' || cmd === 'resume') {
       const paths = resolveRun(cfg, repo, pos[1])
@@ -166,7 +173,7 @@ export async function runPe(argv) {
       const prev = JSON.parse(readFileSync(paths.verdict, 'utf8'))
       const flow = cmd === 'revise' ? runRevise : runResume
       const result = await flow({ repo, runId: prev.run, verdict: prev, flags, cfg, log: (s) => err(`pe: ${s}`) })
-      return finishCommand(result, cfg, repo)
+      return finishCommand(result, cfg, repo, flags)
     }
     if (cmd === 'report') {
       const paths = resolveRun(cfg, repo, pos[1])

@@ -20,6 +20,7 @@ export function loadConfig(repo, env = process.env) {
     }
   }
   const cfg = {
+    notify: Boolean(file.notify),
     cairn: file.cairn ? { mode: 'shadow', base: 'main', ...file.cairn } : null,
     budgets: { ...DEFAULTS.budgets, ...file.budgets },
     retries: { ...DEFAULTS.retries, ...file.retries },
