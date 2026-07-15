@@ -88,8 +88,8 @@ sealed on disk, or an honest terminal state explaining why not.
   citations are printed in the gate block. Every block ends with
   "merge_authorized: false. This gate routes reviewer attention; it never
   authorizes merge."
-- **`pe unseal <run-id> [--outcome strong|partial --findings <n>
-  --changes-requested]`:** prints the sealed result, records the unseal
+- **`pe unseal <run-id> --outcome strong|partial [--findings <n>]
+  [--changes-requested]`:** prints the sealed result, records the unseal
   timestamp, and logs the observed human outcome next to it: the Track B
   pairing. Refuses to run twice for the same run.
 - **Role separation:** memory admission (`remember`, `confirm`, `capture`,
