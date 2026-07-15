@@ -25,6 +25,13 @@ tokens     48210
 Piped, the verdict is TOON (agents can chain on it); progress and hints go
 to stderr, so `pe run ... | tee verdict.toon` stays clean.
 
+While the delegated session works, its tool calls tick live on stderr
+(`agent    Edit js/net.js`, `agent    Bash tt`); `--quiet` silences them.
+The agent's prose streams too, except under Cairn shadow mode: the agent
+runs the review gate itself and may discuss the result, so in shadow mode
+narration stays in the sealed evidence and only tool calls print. Tool
+results never print.
+
 ## Install
 
 ```sh
@@ -39,11 +46,11 @@ Requires Node >= 22, git, and the `claude` CLI. The sibling tools `wtree`,
 
 | Command | What it does |
 |---|---|
-| `pe run [--repo <path>] [--base <ref>] [--draft-only] [--max-turns <n>] "<task>"` | the full pipeline: worktree, delegate, verify, deliver, report |
+| `pe run [--repo <path>] [--base <ref>] [--draft-only] [--max-turns <n>] [--quiet] "<task>"` | the full pipeline: worktree, delegate, verify, deliver, report |
 | `pe revise [run-id]` | after human review: fetch the PR feedback via `ght`, address it in the same worktree, push the same branch (updates the PR) |
 | `pe resume [run-id]` | continue a `FAILED_TESTS` / `ABORTED_BUDGET` run in its preserved worktree, with the recorded failure as context |
 | `pe report [run-id]` | re-print a past run's verdict and artifact paths (default: latest) |
-| `pe unseal <run-id> [--outcome strong\|partial] [--findings <n>] [--changes-requested]` | pilot: reveal the sealed Cairn record (exactly once) and log the human outcome |
+| `pe unseal <run-id> --outcome strong\|partial [--findings <n>] [--changes-requested]` | pilot: reveal the sealed Cairn record (exactly once) and log the human outcome. `--outcome` is required; the record is final, so log what the review actually found or it reads as clean |
 | `pe doctor` | preflight every dependency (claude, wtree, tt, ght, git, gh auth, cairn, evidence dir); exit 1 if anything would break a run |
 | `pe scorecard` | pilot metrics from the evidence dir: run states, remediation rate, spend, sealed records vs unsealed human outcomes |
 | `pe status` | the runs, newest first: state, branch, PR, live worktree, unsealed |
@@ -108,9 +115,11 @@ merge_authorized: false. This gate routes reviewer attention; it never authorize
 ```
 
 The reviewer stays blind; the evidence is content-addressed and provably
-captured before review. After reviewing, `pe unseal <run-id>` reveals the
-record exactly once and logs the observed human outcome next to it. That
-pairing is the pilot's comparison data.
+captured before review. After reviewing, `pe unseal <run-id> --outcome ...`
+reveals the record exactly once and logs the observed human outcome next to
+it. That pairing is the pilot's comparison data, and it is final: unseal
+refuses to run twice, so record the findings count and whether changes were
+requested at unseal time.
 
 **gate (post-pilot).** The review drives delivery: PASS ships ready (exit
 0); HUMAN_REQUIRED ships ready with the attention flag in the description

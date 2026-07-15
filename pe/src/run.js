@@ -26,6 +26,25 @@ function makeCtx({ repo, cfg, flags, log, runId, task, branch, base, paths, wt }
   }
 
   const claudeEnv = { ...process.env, PE_EVIDENCE_DIR: paths.dir }
+
+  // Live ticker: stream what the delegated agent DOES (tool calls) to stderr
+  // as it happens. Its prose streams too, but only where it cannot leak the
+  // sealed Cairn verdict (no Cairn configured, or gate mode); in shadow mode
+  // the agent may run and discuss `cairn review` itself, so narration stays
+  // in the sealed evidence. Tool results never print.
+  const showProse = !cfg.cairn || cfg.cairn.mode === 'gate'
+  const narrate = (ev) => {
+    if (flags.quiet || ev.type !== 'assistant') return
+    for (const b of ev.message?.content ?? []) {
+      if (b.type === 'tool_use') {
+        const target = b.input?.file_path ?? b.input?.command ?? b.input?.pattern ?? ''
+        log(`agent    ${b.name} ${String(target).split('\n')[0].slice(0, 70)}`.trimEnd())
+      } else if (b.type === 'text' && showProse && b.text?.trim()) {
+        log(`agent    ${b.text.trim().split('\n')[0].slice(0, 90)}`)
+      }
+    }
+  }
+
   // Returns null on success; a terminal result on timeout or a session that
   // never completed (crash, missing binary): environment, not test failure.
   ctx.delegateOnce = async (prompt, label) => {
@@ -41,6 +60,7 @@ function makeCtx({ repo, cfg, flags, log, runId, task, branch, base, paths, wt }
       timeoutMs: cfg.budgets.timeoutMin * 60_000,
       transcriptPath: paths.transcript,
       env: claudeEnv,
+      onEvent: narrate,
     })
     const u = usageOf(d.result)
     totals.turns += u.turns

@@ -54,6 +54,10 @@ const calls = readFileSync(join(state, 'claude.calls'), 'utf8').trim().split('\\
 const script = JSON.parse(readFileSync(join(state, 'claude.json'), 'utf8')).script
 const out = (o) => process.stdout.write(JSON.stringify(o) + '\\n')
 out({ type: 'system', subtype: 'init' })
+out({ type: 'assistant', message: { content: [
+  { type: 'tool_use', name: 'Edit', input: { file_path: 'feature.txt' } },
+  { type: 'text', text: 'PROSE_MARKER planning the change' },
+] } })
 const commit = (msg) => {
   execFileSync('git', ['add', '-A'], { cwd: process.cwd() })
   execFileSync('git', ['commit', '--allow-empty', '-m', msg], { cwd: process.cwd() })
@@ -220,6 +224,11 @@ test('happy path: worktree → implement → verify → real push → ready PR',
   assert.match(prompt, /review gate executable exists at/)
   assert.doesNotMatch(prompt, /PASS|HUMAN_REQUIRED|BLOCKED/)
 
+  // live ticker: tool calls stream to stderr; agent prose stays sealed in
+  // shadow mode (it could restate the Cairn verdict)
+  assert.match(r.stderr, /agent {4}Edit feature\.txt/)
+  assert.doesNotMatch(r.stderr, /PROSE_MARKER/)
+
   // evidence: sealed record, verdict, and transcript exist outside the repo
   const runDir = join(sb.evidence, repoSlugDir(sb), verdict.run)
   assert.equal(existsSync(join(runDir, 'sealed', 'cairn.json')), true)
@@ -359,24 +368,42 @@ test('gate mode: HUMAN_REQUIRED delivers ready and exits 3', () => {
   assert.equal(verdict.state, 'DELIVERED_READY')
   const body = readFileSync(join(sb.evidence, repoSlugDir(sb), verdict.run, 'pr-body.md'), 'utf8')
   assert.match(body, /status: HUMAN_REQUIRED/)
+  // gate mode is not blind: agent prose streams live
+  assert.match(r.stderr, /agent {4}PROSE_MARKER planning the change/)
 })
 
-test('unseal reveals the record exactly once and logs the outcome', () => {
+test('--quiet silences the live ticker', () => {
+  const sb = makeSandbox()
+  const r = pe(['run', '--quiet', 'silent feature'], sb)
+  assert.equal(r.status, 0, r.stderr)
+  assert.doesNotMatch(r.stderr, /agent {4}/)
+})
+
+test('unseal requires an explicit outcome, reveals once, logs the record', () => {
   const sb = makeSandbox()
   setCairn(sb, 'HUMAN_REQUIRED', ['a sealed finding'])
   const r = pe(['run', 'sealed change'], sb)
   const runId = decode(r.stdout).run
 
+  // bare unseal records nothing: it is a usage error, and the seal survives
+  const bare = pe(['unseal', runId], sb)
+  assert.equal(bare.status, 2)
+  assert.match(bare.stderr, /requires --outcome/)
+  assert.match(bare.stderr, /record is final/)
+  assert.equal(existsSync(join(sb.evidence, repoSlugDir(sb), runId, 'outcome.json')), false)
+
   const first = pe(['unseal', runId, '--outcome', 'strong', '--findings', '1'], sb)
   assert.equal(first.status, 0, first.stderr)
   assert.match(first.stdout, /HUMAN_REQUIRED/)
   assert.match(first.stdout, /a sealed finding/)
+  // omitted --changes-requested is called out before the record is final
+  assert.match(first.stderr, /--changes-requested omitted/)
 
   const outcome = JSON.parse(readFileSync(join(sb.evidence, repoSlugDir(sb), runId, 'outcome.json'), 'utf8'))
   assert.equal(outcome.outcome, 'strong')
   assert.equal(outcome.findings, 1)
 
-  const second = pe(['unseal', runId], sb)
+  const second = pe(['unseal', runId, '--outcome', 'partial'], sb)
   assert.notEqual(second.status, 0)
   assert.match(second.stderr, /already unsealed/)
 })

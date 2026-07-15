@@ -5,7 +5,7 @@ import { prepSpawn } from './spawn.js'
 // One headless Claude Code delegation. Streams stream-json lines to the
 // transcript as they arrive (crash-safe evidence), captures the final result
 // event, and enforces the wall-clock budget by killing the child.
-export function delegate({ bin, prompt, cwd, maxTurns, timeoutMs, transcriptPath, env }) {
+export function delegate({ bin, prompt, cwd, maxTurns, timeoutMs, transcriptPath, env, onEvent }) {
   return new Promise((resolvePromise) => {
     const args = ['-p', prompt, '--output-format', 'stream-json', '--verbose', '--max-turns', String(maxTurns)]
     const [cmd, argv, opts] = prepSpawn(bin, args, { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] })
@@ -29,6 +29,7 @@ export function delegate({ bin, prompt, cwd, maxTurns, timeoutMs, transcriptPath
       try {
         const ev = JSON.parse(line)
         if (ev.type === 'result') result = ev
+        if (onEvent) onEvent(ev)
       } catch { /* non-JSON line; kept in transcript anyway */ }
     }
     child.stdout.on('data', (d) => {

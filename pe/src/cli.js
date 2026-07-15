@@ -14,9 +14,12 @@ import { sh } from './exec.js'
 export const USAGE = `pe: principal-engineer harness wrapping headless Claude Code
 
 Usage:
-  pe run [--repo <path>] [--base <ref>] [--draft-only] [--max-turns <n>] "<task>"
+  pe run [--repo <path>] [--base <ref>] [--draft-only] [--max-turns <n>]
+         [--quiet] "<task>"
       stage a worktree, delegate implementation to Claude Code, verify (tt,
-      clean tree), deliver a PR, seal pilot evidence. Verdict on stdout.
+      clean tree), deliver a PR, seal pilot evidence. Verdict on stdout; the
+      agent's live tool calls tick on stderr (--quiet silences; its prose
+      streams too unless Cairn shadow mode would make that a leak).
   pe revise [run-id] [--repo <path>]
       after human review: fetch the PR feedback, address it in the same
       worktree, push the same branch (default: the latest run)
@@ -25,9 +28,11 @@ Usage:
       worktree, with the recorded failure as context (default: latest)
   pe report [run-id] [--repo <path>]
       re-print a past run's verdict (default: the latest run)
-  pe unseal <run-id> [--repo <path>] [--outcome strong|partial]
+  pe unseal <run-id> --outcome strong|partial [--repo <path>]
             [--findings <n>] [--changes-requested]
-      pilot: reveal the sealed Cairn record (once) and log the human outcome
+      pilot: reveal the sealed Cairn record (once) and log the human outcome.
+      --outcome is required: the record is final, so log what the review
+      actually found (--findings, --changes-requested) or it reads as clean.
   pe doctor [--repo <path>]
       preflight every dependency (claude, wtree, tt, ght, git, gh auth,
       cairn, evidence dir); exit 1 if anything would break a run
@@ -53,6 +58,7 @@ export function parseArgv(argv) {
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
     if (a === '--help' || a === '-h') flags.help = true
+    else if (a === '--quiet') flags.quiet = true
     else if (a === '--draft-only') flags.draftOnly = true
     else if (a === '--notify') flags.notify = true
     else if (a === '--changes-requested') flags.changesRequested = true
@@ -192,7 +198,13 @@ export async function runPe(argv) {
     }
     if (cmd === 'unseal') {
       if (!pos[1]) throw new UsageError('pe: run id required: pe unseal <run-id>')
+      if (!flags.outcome) {
+        throw new UsageError('pe: unseal requires --outcome strong|partial. The record is final;\n'
+          + 'log what the human review actually found (--findings <n>, --changes-requested).')
+      }
       const paths = resolveRun(cfg, repo, pos[1])
+      if (flags.findings === undefined) err('pe: note: --findings omitted; the final record will carry no findings count')
+      if (!flags.changesRequested) err('pe: note: --changes-requested omitted; recording changes_requested: false (final)')
       const sealed = unseal(paths, flags)
       process.stdout.write(sealed + '\n')
       err(`pe: unsealed ${pos[1]}; outcome logged to ${paths.outcome}`)
