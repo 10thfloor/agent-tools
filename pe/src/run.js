@@ -220,6 +220,44 @@ export async function runRevise({ repo, runId, verdict, flags, cfg, log }) {
   return ctx.finish('REVISED', { tt: v.tt, pr: { url: verdict.pr, number } })
 }
 
+// ---- pe resume ------------------------------------------------------------
+// Continue a FAILED_TESTS or ABORTED_BUDGET run in its preserved worktree,
+// with the recorded failure as context. Same gates, same delivery.
+export async function runResume({ repo, runId, verdict, flags, cfg, log }) {
+  if (!['FAILED_TESTS', 'ABORTED_BUDGET'].includes(verdict.state)) {
+    throw new UsageError(`pe: run '${runId}' is ${verdict.state}; resume only continues FAILED_TESTS or ABORTED_BUDGET runs`)
+  }
+  if (!verdict.worktree || !existsSync(verdict.worktree)) {
+    throw new UsageError(`pe: worktree for '${runId}' is gone; cannot resume`)
+  }
+  const paths = evidencePaths(cfg.evidenceDir, repo, runId)
+  const base = flags.base ?? verdict.base ?? cfg.cairn?.base ?? 'main'
+  const ctx = makeCtx({
+    repo, cfg, flags, log, runId, task: verdict.task, branch: verdict.branch,
+    base, paths, wt: verdict.worktree,
+  })
+  journal(paths, 'resume.start', { from: verdict.state })
+
+  const prompt = [
+    'You are resuming an interrupted delivery in this worktree. A previous',
+    'session did not finish; pick up where it left off.',
+    '',
+    `ORIGINAL TASK: ${ctx.task}`,
+    '',
+    `WHERE IT STOPPED:\n${verdict.message || 'the session ran out of budget.'}`,
+    '',
+    'Make the tests green with `tt` and commit everything. Do not push and',
+    'do not open pull requests; delivery is handled outside this session.',
+  ].join('\n') + '\n'
+
+  const { fail, v } = await verifyLoop(ctx, prompt, 'resume')
+  if (fail) return fail
+  if (!v.ok && v.gate !== 'cairn') {
+    return ctx.finish('FAILED_TESTS', { tt: v.tt, message: `${v.reason}${v.detail ? `\n${v.detail}` : ''}` })
+  }
+  return deliverStage(ctx, v, { gateBlocked: !v.ok })
+}
+
 export function exitCodeFor(result) {
   switch (result.state) {
     case 'DELIVERED_READY': return result.humanRequired ? 3 : 0

@@ -75,6 +75,10 @@ if (script === 'sleep') {
     writeFileSync('feature.txt', 'v2 fixed\\n')
     commit('fix: make tests pass')
   }
+} else if (script === 'fix-broken') {
+  rmSync('BROKEN', { force: true })
+  writeFileSync('feature.txt', 'repaired\\n')
+  commit('fix: repair the build')
 } else if (script === 'always-broken') {
   writeFileSync('BROKEN', String(calls) + '\\n')
   writeFileSync('feature.txt', 'attempt ' + calls + '\\n')
@@ -430,6 +434,35 @@ test('doctor: green sandbox passes; a broken dependency fails with exit 1', () =
   const broken = pe(['doctor'], sb, { PE_CLAUDE: '/nonexistent/claude' })
   assert.equal(broken.status, 1)
   assert.equal(decode(broken.stdout).find((r) => r.check === 'claude').status, 'fail')
+})
+
+test('resume continues a failed run in its worktree and delivers; refuses delivered runs', () => {
+  const sb = makeSandbox()
+  setScript(sb, 'always-broken')
+  const failed = decode(pe(['run', 'rocky start'], sb).stdout)
+  assert.equal(failed.state, 'FAILED_TESTS')
+
+  setScript(sb, 'fix-broken')
+  const r = pe(['resume', failed.run], sb)
+  assert.equal(r.status, 0, r.stderr)
+  const verdict = decode(r.stdout)
+  assert.equal(verdict.state, 'DELIVERED_READY')
+  assert.equal(verdict.run, failed.run)
+  assert.equal(verdict.branch, failed.branch)
+
+  // the prompt carried the recorded failure context
+  const prompt = claudeCalls(sb).at(-1).prompt
+  assert.match(prompt, /WHERE IT STOPPED/)
+  assert.match(prompt, /broken thing/)
+
+  // fully delivered: sealed record now exists, PR opened and readied
+  assert.equal(existsSync(join(sb.evidence, repoSlugDir(sb), failed.run, 'sealed', 'cairn.json')), true)
+  assert.deepEqual(ghtLog(sb).map((a) => a[1]), ['create', 'ready'])
+
+  // a delivered run cannot be resumed
+  const again = pe(['resume', failed.run], sb)
+  assert.equal(again.status, 2)
+  assert.match(again.stderr, /resume only continues/)
 })
 
 test('scorecard aggregates run states, spend, and the pilot pairing', () => {

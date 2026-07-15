@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { encode } from '@toon-format/toon'
 import { loadConfig, UsageError } from './config.js'
 import { evidencePaths, latestPath } from './evidence.js'
-import { runPipeline, runRevise, exitCodeFor } from './run.js'
+import { runPipeline, runRevise, runResume, exitCodeFor } from './run.js'
 import { unseal } from './cairn.js'
 import { runDoctor } from './doctor.js'
 import { scorecard } from './scorecard.js'
@@ -18,6 +18,9 @@ Usage:
   pe revise [run-id] [--repo <path>]
       after human review: fetch the PR feedback, address it in the same
       worktree, push the same branch (default: the latest run)
+  pe resume [run-id] [--repo <path>]
+      continue a FAILED_TESTS / ABORTED_BUDGET run in its preserved
+      worktree, with the recorded failure as context (default: latest)
   pe report [run-id] [--repo <path>]
       re-print a past run's verdict (default: the latest run)
   pe unseal <run-id> [--repo <path>] [--outcome strong|partial]
@@ -154,11 +157,12 @@ export async function runPe(argv) {
       const result = await runPipeline({ repo, task, flags, cfg, log: (s) => err(`pe: ${s}`) })
       return finishCommand(result, cfg, repo)
     }
-    if (cmd === 'revise') {
+    if (cmd === 'revise' || cmd === 'resume') {
       const paths = resolveRun(cfg, repo, pos[1])
       if (!existsSync(paths.verdict)) throw new UsageError(`pe: no verdict for run '${pos[1] ?? '(latest)'}'`)
       const prev = JSON.parse(readFileSync(paths.verdict, 'utf8'))
-      const result = await runRevise({ repo, runId: prev.run, verdict: prev, flags, cfg, log: (s) => err(`pe: ${s}`) })
+      const flow = cmd === 'revise' ? runRevise : runResume
+      const result = await flow({ repo, runId: prev.run, verdict: prev, flags, cfg, log: (s) => err(`pe: ${s}`) })
       return finishCommand(result, cfg, repo)
     }
     if (cmd === 'report') {
