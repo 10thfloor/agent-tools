@@ -6,6 +6,7 @@ import { evidencePaths, latestPath } from './evidence.js'
 import { runPipeline, runRevise, exitCodeFor } from './run.js'
 import { unseal } from './cairn.js'
 import { runDoctor } from './doctor.js'
+import { scorecard } from './scorecard.js'
 import { sh } from './exec.js'
 
 export const USAGE = `pe: principal-engineer harness wrapping headless Claude Code
@@ -25,6 +26,9 @@ Usage:
   pe doctor [--repo <path>]
       preflight every dependency (claude, wtree, tt, ght, git, gh auth,
       cairn, evidence dir); exit 1 if anything would break a run
+  pe scorecard [--repo <path>]
+      pilot metrics from the evidence dir: run states, remediation rate,
+      spend, sealed records vs unsealed human outcomes
 
 Exit codes: 0 delivered, 1 gates failed / aborted, 2 usage or environment
 error. Gate mode mirrors cairn --gate: 3 = delivered but HUMAN_REQUIRED.
@@ -169,6 +173,10 @@ export async function runPe(argv) {
       const sealed = unseal(paths, flags)
       process.stdout.write(sealed + '\n')
       err(`pe: unsealed ${pos[1]}; outcome logged to ${paths.outcome}`)
+      return 0
+    }
+    if (cmd === 'scorecard') {
+      emit(scorecard(cfg.evidenceDir, repo))
       return 0
     }
     if (cmd === 'doctor') {

@@ -44,6 +44,7 @@ Requires Node >= 22, git, and the `claude` CLI. The sibling tools `wtree`,
 | `pe report [run-id]` | re-print a past run's verdict and artifact paths (default: latest) |
 | `pe unseal <run-id> [--outcome strong\|partial] [--findings <n>] [--changes-requested]` | pilot: reveal the sealed Cairn record (exactly once) and log the human outcome |
 | `pe doctor` | preflight every dependency (claude, wtree, tt, ght, git, gh auth, cairn, evidence dir); exit 1 if anything would break a run |
+| `pe scorecard` | pilot metrics from the evidence dir: run states, remediation rate, spend, sealed records vs unsealed human outcomes |
 
 Exit codes: `0` delivered, `1` gates failed or run aborted, `2` usage or
 environment error. In Cairn gate mode, `3` means delivered but

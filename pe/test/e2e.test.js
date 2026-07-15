@@ -432,6 +432,26 @@ test('doctor: green sandbox passes; a broken dependency fails with exit 1', () =
   assert.equal(decode(broken.stdout).find((r) => r.check === 'claude').status, 'fail')
 })
 
+test('scorecard aggregates run states, spend, and the pilot pairing', () => {
+  const sb = makeSandbox()
+  const good = decode(pe(['run', 'one'], sb).stdout)
+  setScript(sb, 'always-broken')
+  pe(['run', 'two'], sb)
+  pe(['unseal', good.run, '--outcome', 'strong'], sb)
+
+  const sc = decode(pe(['scorecard'], sb).stdout)
+  assert.equal(sc.runs, 2)
+  assert.equal(sc.states.DELIVERED_READY, 1)
+  assert.equal(sc.states.FAILED_TESTS, 1)
+  assert.equal(sc.delivered, 1)
+  assert.equal(sc.remediated, 1) // the failing run spent its remediation round
+  assert.equal(sc.tokens > 0, true)
+  assert.equal(sc.pilot.sealed, 1)
+  assert.equal(sc.pilot.unsealed, 1)
+  assert.equal(sc.pilot.awaitingUnseal, 0)
+  assert.equal(sc.pilot.outcomes.strong, 1)
+})
+
 test('report re-prints the latest verdict', () => {
   const sb = makeSandbox()
   const r = pe(['run', 'reportable feature'], sb)
