@@ -5,6 +5,7 @@ import { writeWorktreeSettings, buildPrompt, remediationPrompt } from './setting
 import { delegate, usageOf } from './claude.js'
 import { reviewAndSeal } from './cairn.js'
 import { push, createPr, readyPr, renderBody, renderCairnBlock } from './deliver.js'
+import { scanDiff } from './secrets.js'
 import { UsageError } from './config.js'
 
 // Shared machinery for every flow that drives a delegated session against a
@@ -102,12 +103,29 @@ async function verifyLoop(ctx, firstPrompt, label, verifyOpts = {}) {
   return { v }
 }
 
+// The secret gate plus the push itself. Returns null on success, a terminal
+// result otherwise. Guards every route a diff can leave the machine.
+function guardedPush(ctx, v) {
+  const secrets = scanDiff(ctx.git(['diff', `${ctx.base}...HEAD`]).stdout || '')
+  if (secrets.length) {
+    journal(ctx.paths, 'secrets.blocked', { count: secrets.length })
+    return ctx.finish('BLOCKED_SECRETS', {
+      tt: v.tt,
+      message: `refusing to push: ${secrets.length} credential-shaped addition(s)\n`
+        + secrets.map((s) => `${s.file}: ${s.kind} ${s.sample}`).join('\n'),
+    })
+  }
+  const pushErr = push({ git: ctx.cfg.bins.git, wt: ctx.wt, branch: ctx.branch })
+  if (pushErr) return ctx.finish('ERROR', { tt: v.tt, message: `push failed: ${pushErr.trim()}` })
+  return null
+}
+
 // Stage 4 + 5: push, PR, readiness, terminal state.
 function deliverStage(ctx, v, { gateBlocked }) {
   const { cfg, flags, git, log, paths } = ctx
   log('deliver  pushing branch and opening PR')
-  const pushErr = push({ git: cfg.bins.git, wt: ctx.wt, branch: ctx.branch })
-  if (pushErr) return ctx.finish('ERROR', { tt: v.tt, message: `push failed: ${pushErr.trim()}` })
+  const pushFail = guardedPush(ctx, v)
+  if (pushFail) return pushFail
 
   const commits = (git(['log', '--reverse', '--format=%s', `${ctx.base}..HEAD`]).stdout || '').trim().split('\n').filter(Boolean)
   const shortstat = (git(['diff', '--shortstat', `${ctx.base}...HEAD`]).stdout || '').trim()
@@ -209,8 +227,8 @@ export async function runRevise({ repo, runId, verdict, flags, cfg, log }) {
   if (!v.ok) {
     return ctx.finish('FAILED_TESTS', { tt: v.tt, message: `${v.reason}${v.detail ? `\n${v.detail}` : ''}` })
   }
-  const pushErr = push({ git: cfg.bins.git, wt: ctx.wt, branch: ctx.branch })
-  if (pushErr) return ctx.finish('ERROR', { tt: v.tt, message: `push failed: ${pushErr.trim()}` })
+  const pushFail = guardedPush(ctx, v)
+  if (pushFail) return pushFail
   journal(paths, 'revise.pushed', {})
 
   if (cfg.cairn) {
@@ -265,6 +283,7 @@ export function exitCodeFor(result) {
     case 'REVISED': return 0
     case 'FAILED_TESTS':
     case 'BLOCKED_CAIRN':
+    case 'BLOCKED_SECRETS':
     case 'ABORTED_BUDGET': return 1
     default: return 2
   }

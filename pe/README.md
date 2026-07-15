@@ -79,6 +79,10 @@ The autonomy envelope lives in code, not in the prompt:
   PR) is performed by the harness only.
 - Budgets: `--max-turns` plus a wall-clock timeout that kills the run
   (`ABORTED_BUDGET`).
+- A secret scan guards every push: credential-shaped additions in the branch
+  diff (AWS keys, GitHub/Slack tokens, private key blocks, secret
+  assignments) stop delivery as `BLOCKED_SECRETS`, with the matches masked
+  in the report. Nothing leaves the machine.
 - The generated `.claude/` settings never enter the diff (repo-local git
   exclude).
 
@@ -166,6 +170,7 @@ One directory per run, outside the repo and never committed:
 | DELIVERED_DRAFT | PR open as draft (`--draft-only` or `readyOnGreen: false`) | 0 |
 | FAILED_TESTS | verification still failing after the remediation round; no PR | 1 |
 | BLOCKED_CAIRN | gate mode only: BLOCKED after remediation; draft PR | 1 |
+| BLOCKED_SECRETS | credential-shaped additions in the diff; nothing pushed | 1 |
 | ABORTED_BUDGET | turn or wall-clock budget exhausted | 1 |
 | ERROR | usage or environment failure | 2 |
 

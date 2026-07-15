@@ -75,6 +75,9 @@ if (script === 'sleep') {
     writeFileSync('feature.txt', 'v2 fixed\\n')
     commit('fix: make tests pass')
   }
+} else if (script === 'leaky') {
+  writeFileSync('config.js', 'export const AWS_KEY = "AKIA' + 'ABCDEFGHIJKLMNOP"\\n')
+  commit('feat: add config')
 } else if (script === 'fix-broken') {
   rmSync('BROKEN', { force: true })
   writeFileSync('feature.txt', 'repaired\\n')
@@ -434,6 +437,26 @@ test('doctor: green sandbox passes; a broken dependency fails with exit 1', () =
   const broken = pe(['doctor'], sb, { PE_CLAUDE: '/nonexistent/claude' })
   assert.equal(broken.status, 1)
   assert.equal(decode(broken.stdout).find((r) => r.check === 'claude').status, 'fail')
+})
+
+test('credential-shaped additions block the push: BLOCKED_SECRETS, masked report', () => {
+  const sb = makeSandbox()
+  setScript(sb, 'leaky')
+  const r = pe(['run', 'add config'], sb)
+  assert.equal(r.status, 1)
+  const verdict = decode(r.stdout)
+  assert.equal(verdict.state, 'BLOCKED_SECRETS')
+  assert.match(verdict.message, /aws access key/)
+
+  // the full key never appears on any surface the harness prints
+  const fullKey = 'AKIA' + 'ABCDEFGHIJKLMNOP'
+  assert.equal(r.stdout.includes(fullKey), false)
+  assert.equal(r.stderr.includes(fullKey), false)
+
+  // nothing left the machine: no branch on origin, no PR
+  const branches = sh('git', ['branch', '--list', '--format=%(refname:short)'], join(sb.dir, 'origin.git'))
+  assert.doesNotMatch(branches, /pe\//)
+  assert.equal(ghtLog(sb).length, 0)
 })
 
 test('resume continues a failed run in its worktree and delivers; refuses delivered runs', () => {
