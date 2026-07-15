@@ -508,6 +508,22 @@ test('scorecard aggregates run states, spend, and the pilot pairing', () => {
   assert.equal(sc.pilot.outcomes.strong, 1)
 })
 
+test('status lists runs newest first with state, PR, and liveness', () => {
+  const sb = makeSandbox()
+  const good = decode(pe(['run', 'first'], sb).stdout)
+  setScript(sb, 'always-broken')
+  const bad = decode(pe(['run', 'second'], sb).stdout)
+
+  const rows = decode(pe(['status'], sb).stdout)
+  assert.equal(rows.length, 2)
+  assert.equal(rows[0].run, bad.run) // newest first
+  assert.equal(rows[0].state, 'FAILED_TESTS')
+  assert.equal(rows[0].live, true) // failed worktree preserved
+  assert.equal(rows[1].run, good.run)
+  assert.equal(rows[1].state, 'DELIVERED_READY')
+  assert.equal(rows[1].pr, 'https://github.com/fake/proj/pull/7')
+})
+
 test('report re-prints the latest verdict', () => {
   const sb = makeSandbox()
   const r = pe(['run', 'reportable feature'], sb)

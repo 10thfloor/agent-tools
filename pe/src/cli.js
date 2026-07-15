@@ -7,6 +7,7 @@ import { runPipeline, runRevise, runResume, exitCodeFor } from './run.js'
 import { unseal } from './cairn.js'
 import { runDoctor } from './doctor.js'
 import { scorecard } from './scorecard.js'
+import { readRuns } from './runs.js'
 import { sh } from './exec.js'
 
 export const USAGE = `pe: principal-engineer harness wrapping headless Claude Code
@@ -32,6 +33,8 @@ Usage:
   pe scorecard [--repo <path>]
       pilot metrics from the evidence dir: run states, remediation rate,
       spend, sealed records vs unsealed human outcomes
+  pe status [--repo <path>]
+      the runs, newest first: state, branch, PR, live worktree, unsealed
 
 Exit codes: 0 delivered, 1 gates failed / aborted, 2 usage or environment
 error. Gate mode mirrors cairn --gate: 3 = delivered but HUMAN_REQUIRED.
@@ -177,6 +180,26 @@ export async function runPe(argv) {
       const sealed = unseal(paths, flags)
       process.stdout.write(sealed + '\n')
       err(`pe: unsealed ${pos[1]}; outcome logged to ${paths.outcome}`)
+      return 0
+    }
+    if (cmd === 'status') {
+      const rows = readRuns(cfg.evidenceDir, repo).slice(0, 20).map((r) => ({
+        run: r.runId,
+        state: r.verdict?.state ?? 'UNKNOWN',
+        branch: r.verdict?.branch ?? '',
+        pr: r.verdict?.pr ?? '',
+        live: Boolean(r.verdict?.worktree && existsSync(r.verdict.worktree)),
+        unsealed: Boolean(r.outcome),
+        when: new Date(parseInt(r.runId.slice(3, -3), 36)).toISOString().slice(0, 16),
+      }))
+      if (process.stdout.isTTY) {
+        for (const r of rows) {
+          process.stdout.write(`${r.when}  ${r.state.padEnd(16)} ${r.run}  ${r.branch}  ${r.pr}\n`)
+        }
+      } else {
+        process.stdout.write(encode(rows, { delimiter: ',' }) + '\n')
+      }
+      err(`pe: ${rows.length} run(s)`)
       return 0
     }
     if (cmd === 'scorecard') {
