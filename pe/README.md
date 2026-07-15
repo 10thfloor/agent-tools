@@ -40,6 +40,7 @@ Requires Node >= 22, git, and the `claude` CLI. The sibling tools `wtree`,
 | Command | What it does |
 |---|---|
 | `pe run [--repo <path>] [--base <ref>] [--draft-only] [--max-turns <n>] "<task>"` | the full pipeline: worktree, delegate, verify, deliver, report |
+| `pe revise [run-id]` | after human review: fetch the PR feedback via `ght`, address it in the same worktree, push the same branch (updates the PR) |
 | `pe report [run-id]` | re-print a past run's verdict and artifact paths (default: latest) |
 | `pe unseal <run-id> [--outcome strong\|partial] [--findings <n>] [--changes-requested]` | pilot: reveal the sealed Cairn record (exactly once) and log the human outcome |
 
@@ -114,6 +115,13 @@ and act on what it finds. That is the pilot's Track A experiment, and the
 whole session is recorded as evidence. Memory admission is human-only in
 both modes: your review corrections become Cairn memory through your own
 `remember`/`confirm`, never through the agent.
+
+`pe revise` closes the loop: after your review, it fetches the PR feedback,
+re-delegates in the preserved worktree, and pushes the same branch. Cairn is
+not re-run on a revision (the sealed record documents the diff you actually
+reviewed), and when Cairn is configured the command ends by printing a
+`cairn remember` scaffold built from the PR: you fill in the confirmed rule
+and run it yourself.
 
 ## Config
 

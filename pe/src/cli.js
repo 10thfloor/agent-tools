@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { encode } from '@toon-format/toon'
 import { loadConfig, UsageError } from './config.js'
 import { evidencePaths, latestPath } from './evidence.js'
-import { runPipeline, exitCodeFor } from './run.js'
+import { runPipeline, runRevise, exitCodeFor } from './run.js'
 import { unseal } from './cairn.js'
 import { sh } from './exec.js'
 
@@ -13,6 +13,9 @@ Usage:
   pe run [--repo <path>] [--base <ref>] [--draft-only] [--max-turns <n>] "<task>"
       stage a worktree, delegate implementation to Claude Code, verify (tt,
       clean tree), deliver a PR, seal pilot evidence. Verdict on stdout.
+  pe revise [run-id] [--repo <path>]
+      after human review: fetch the PR feedback, address it in the same
+      worktree, push the same branch (default: the latest run)
   pe report [run-id] [--repo <path>]
       re-print a past run's verdict (default: the latest run)
   pe unseal <run-id> [--repo <path>] [--outcome strong|partial]
@@ -80,6 +83,7 @@ function verdictOf(result) {
     worktree: result.worktree ?? '',
     pr: result.pr?.url ?? '',
     state: result.state,
+    base: result.base ?? '',
     tt: { failed: result.tt?.failed ?? '', passed: result.tt?.passed ?? '' },
     cairn: { recorded: Boolean(result.review?.recorded), evidence: result.review?.evidenceHash ?? '' },
     turns: result.totals.turns,
@@ -87,6 +91,19 @@ function verdictOf(result) {
     durationS: result.durationS,
     message: result.message ?? '',
   }
+}
+
+// Shared tail of every pipeline-driving command: persist the verdict, mark
+// the worktree, narrate, emit, map the exit code.
+function finishCommand(result, cfg, repo) {
+  const verdict = verdictOf(result)
+  writeFileSync(result.paths.verdict, JSON.stringify(verdict, null, 2))
+  if (result.worktree) {
+    sh(cfg.bins.wtree, ['note', result.branch, `pe: ${result.state}`], { cwd: repo })
+  }
+  err(`pe: ${result.state}${result.pr?.url ? ` ${result.pr.url}` : ''}${result.message ? ` (${result.message.split('\n')[0]})` : ''}`)
+  emit(verdict)
+  return exitCodeFor(result)
 }
 
 function resolveRun(cfg, repo, runId) {
@@ -127,15 +144,14 @@ export async function runPe(argv) {
       const task = pos.slice(1).join(' ').trim()
       if (!task) throw new UsageError('pe: a task is required: pe run "<task>"')
       const result = await runPipeline({ repo, task, flags, cfg, log: (s) => err(`pe: ${s}`) })
-      result.task = task
-      const verdict = verdictOf(result)
-      writeFileSync(result.paths.verdict, JSON.stringify(verdict, null, 2))
-      if (result.worktree) {
-        sh(cfg.bins.wtree, ['note', result.branch, `pe: ${result.state}`], { cwd: repo })
-      }
-      err(`pe: ${result.state}${result.pr?.url ? ` ${result.pr.url}` : ''}${result.message ? ` (${result.message.split('\n')[0]})` : ''}`)
-      emit(verdict)
-      return exitCodeFor(result)
+      return finishCommand(result, cfg, repo)
+    }
+    if (cmd === 'revise') {
+      const paths = resolveRun(cfg, repo, pos[1])
+      if (!existsSync(paths.verdict)) throw new UsageError(`pe: no verdict for run '${pos[1] ?? '(latest)'}'`)
+      const prev = JSON.parse(readFileSync(paths.verdict, 'utf8'))
+      const result = await runRevise({ repo, runId: prev.run, verdict: prev, flags, cfg, log: (s) => err(`pe: ${s}`) })
+      return finishCommand(result, cfg, repo)
     }
     if (cmd === 'report') {
       const paths = resolveRun(cfg, repo, pos[1])

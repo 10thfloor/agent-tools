@@ -94,14 +94,20 @@ process.stdout.write(JSON.stringify(verdict) + '\\n')
 process.exit(broken ? 1 : 0)
 `)
 
-  // fake ght: logs every invocation; answers pr create with a URL.
+  // fake ght: logs every invocation; answers pr create with a URL and
+  // pr view with the feedback scripted in state/ght-pr.json.
   const ght = join(state, 'ght.mjs')
   writeFileSync(ght, `
-import { appendFileSync } from 'node:fs'
+import { appendFileSync, existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+const state = process.env.PE_FAKE_STATE
 const args = process.argv.slice(2)
-appendFileSync(join(process.env.PE_FAKE_STATE, 'ght.log'), JSON.stringify(args) + '\\n')
+appendFileSync(join(state, 'ght.log'), JSON.stringify(args) + '\\n')
 if (args[0] === 'pr' && args[1] === 'create') process.stdout.write('https://github.com/fake/proj/pull/7\\n')
+if (args[0] === 'pr' && args[1] === 'view') {
+  const f = join(state, 'ght-pr.json')
+  process.stdout.write(existsSync(f) ? readFileSync(f, 'utf8') : '{"reviews":[],"comments":[]}')
+}
 `)
 
   // fake cairn: emits the envelope scripted in state/cairn.json.
@@ -354,6 +360,56 @@ test('unseal reveals the record exactly once and logs the outcome', () => {
   const second = pe(['unseal', runId], sb)
   assert.notEqual(second.status, 0)
   assert.match(second.stderr, /already unsealed/)
+})
+
+test('revise: fetches PR feedback, re-delegates in the same worktree, pushes the same branch', () => {
+  const sb = makeSandbox()
+  const first = decode(pe(['run', 'first pass'], sb).stdout)
+  assert.equal(first.state, 'DELIVERED_READY')
+  const before = sh('git', ['rev-parse', `refs/heads/${first.branch}`], join(sb.dir, 'origin.git')).trim()
+
+  writeFileSync(join(sb.state, 'ght-pr.json'), JSON.stringify({
+    reviews: [{ author: { login: 'mk' }, state: 'CHANGES_REQUESTED', body: 'Rename greeting to salutation' }],
+    comments: [{ author: { login: 'mk' }, body: 'Also add a test for the empty case' }],
+  }))
+  const rv = pe(['revise', first.run], sb)
+  assert.equal(rv.status, 0, rv.stderr)
+  const verdict = decode(rv.stdout)
+  assert.equal(verdict.state, 'REVISED')
+  assert.equal(verdict.run, first.run)
+
+  // the delegated prompt carried the feedback
+  const last = claudeCalls(sb).at(-1).prompt
+  assert.match(last, /Rename greeting to salutation/)
+  assert.match(last, /empty case/)
+  assert.match(last, /CHANGES_REQUESTED/)
+
+  // the same branch advanced on origin; no second PR was created
+  const after = sh('git', ['rev-parse', `refs/heads/${first.branch}`], join(sb.dir, 'origin.git')).trim()
+  assert.notEqual(after, before)
+  const log = ghtLog(sb)
+  assert.equal(log.some((a) => a[0] === 'pr' && a[1] === 'view'), true)
+  assert.equal(log.filter((a) => a[1] === 'create').length, 1)
+
+  // the human-only Cairn admission is suggested, never executed
+  assert.match(rv.stderr, /remember "<the confirmed rule>"/)
+  assert.equal(existsSync(join(sb.evidence, repoSlugDir(sb), first.run, 'outcome.json')), false)
+})
+
+test('revise guards: no feedback and no PR are usage errors', () => {
+  const sb = makeSandbox()
+  const first = decode(pe(['run', 'quiet pass'], sb).stdout)
+  // no feedback on the PR yet
+  const noFeedback = pe(['revise', first.run], sb)
+  assert.equal(noFeedback.status, 2)
+  assert.match(noFeedback.stderr, /no review feedback/)
+
+  // a run that never delivered has no PR to revise
+  setScript(sb, 'always-broken')
+  const failed = decode(pe(['run', 'doomed'], sb).stdout)
+  const noPr = pe(['revise', failed.run], sb)
+  assert.equal(noPr.status, 2)
+  assert.match(noPr.stderr, /no PR to revise/)
 })
 
 test('report re-prints the latest verdict', () => {
